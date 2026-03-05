@@ -1,11 +1,19 @@
-
-document.addEventListener("scroll", () => {
+(function () {
   const header = document.querySelector("header, .navbar, .top-nav");
   if (!header) return;
 
-  if (window.scrollY > 40) {
-    header.classList.add("scrolled");
-  } else {
-    header.classList.remove("scrolled");
-  }
-});
+  let ticking = false;
+  const apply = () => {
+    ticking = false;
+    header.classList.toggle("scrolled", window.scrollY > 40);
+  };
+
+  const onScroll = () => {
+    if (ticking) return;
+    ticking = true;
+    window.requestAnimationFrame(apply);
+  };
+
+  window.addEventListener("scroll", onScroll, { passive: true });
+  apply();
+})();

@@ -75,4 +75,13 @@ describe("API basic flow", () => {
     expect(res.body.ok).toBe(true);
     expect(typeof res.body.id).toBe("number");
   });
+
+  it("accepts rating-only feedback", async () => {
+    const res = await request(app)
+      .post("/api/feedback")
+      .send({ rating: 4, message: "" });
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(typeof res.body.id).toBe("number");
+  });
 });

@@ -1,10 +1,25 @@
+(function () {
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const targets = Array.from(document.querySelectorAll(".banner img, .hero img, .hero-banner img"));
+  if (!targets.length) return;
 
-document.addEventListener("mousemove", (e) => {
-  const banners = document.querySelectorAll(".banner img, .hero img, .hero-banner img");
-  banners.forEach((img) => {
+  let raf = 0;
+  let nextX = 0;
+  let nextY = 0;
+
+  const apply = () => {
+    raf = 0;
+    for (const img of targets) {
+      img.style.transform = `scale(1.05) translate(${nextX}px, ${nextY}px)`;
+    }
+  };
+
+  const onMove = (e) => {
     const speed = 0.02;
-    const x = (window.innerWidth / 2 - e.clientX) * speed;
-    const y = (window.innerHeight / 2 - e.clientY) * speed;
-    img.style.transform = `scale(1.05) translate(${x}px, ${y}px)`;
-  });
-});
+    nextX = (window.innerWidth * 0.5 - e.clientX) * speed;
+    nextY = (window.innerHeight * 0.5 - e.clientY) * speed;
+    if (!raf) raf = window.requestAnimationFrame(apply);
+  };
+
+  window.addEventListener("pointermove", onMove, { passive: true });
+})();

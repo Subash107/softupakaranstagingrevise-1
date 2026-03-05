@@ -1,5 +1,5 @@
 services:
-  api:
+  backend:
     build: .
     ports:
       - "4000:4000"
@@ -9,6 +9,13 @@ services:
       ADMIN_TOKEN: CHANGE_ME_ADMIN_TOKEN
       JWT_SECRET: CHANGE_ME_STRONG_SECRET
       JWT_EXPIRES_IN: 7d
+      ACCESS_TOKEN_EXPIRES_IN: 15m
+      REFRESH_TOKEN_EXPIRES_IN: 30d
+      REFRESH_TOKEN_SECRET: CHANGE_ME_REFRESH_SECRET
+      COOKIE_SECURE: "false"
+      COOKIE_SAME_SITE: lax
+      CORS_ALLOWED_ORIGINS: http://localhost:8080,http://localhost:8085
+      FRONTEND_URL: http://localhost:8085
       ADMIN_EMAIL: admin@softupakaran.local
       ADMIN_PASSWORD: admin12345
     volumes:

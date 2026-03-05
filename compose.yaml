@@ -1,10 +1,9 @@
 services:
-  asap:
-    image: asap
+  backend:
     build:
-      context: services/backend/node_modules/asap
+      context: ./services/backend
       dockerfile: ./Dockerfile
     environment:
       NODE_ENV: production
     ports:
-      - 3031:3031
+      - "4000:4000"

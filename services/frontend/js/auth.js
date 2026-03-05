@@ -67,7 +67,17 @@
     document.dispatchEvent(new CustomEvent('auth:changed', { detail: { token } }));
   }
 
-  function clearToken(){
+  function getStoredToken(){
+    return localStorage.getItem('token') || sessionStorage.getItem('token') || "";
+  }
+
+  async function clearToken(){
+    const base = getApiBase();
+    if (base) {
+      try {
+        await fetch(base + '/api/auth/logout', { method: 'POST', credentials: 'include' });
+      } catch (_) {}
+    }
     localStorage.removeItem('token');
     sessionStorage.removeItem('token');
     localStorage.removeItem("SPK_LOCAL_PROFILE");
@@ -76,9 +86,11 @@
   }
 
   async function login(email, password){
+    const base = getApiBase();
     const res = await fetch(getApiBase() + '/api/auth/login', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
+      credentials: 'include',
       body: JSON.stringify({ email, password })
     });
     if(!res.ok){
@@ -86,15 +98,23 @@
       throw new Error(t || 'Login failed');
     }
     const data = await res.json();
-    if(!data.token) throw new Error('No token returned');
-    setToken(data.token);
-    return parseJwt(data.token);
+    if(data && data.token){
+      setToken(data.token);
+      return parseJwt(data.token);
+    }
+    if (base) {
+      const meRes = await fetch(base + '/api/me', { credentials: 'include' });
+      if (meRes.ok) return meRes.json();
+    }
+    return null;
   }
 
   async function register(payload){
+    const base = getApiBase();
     const res = await fetch(getApiBase() + '/api/auth/register', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
+      credentials: 'include',
       body: JSON.stringify(payload || {})
     });
     if(!res.ok){
@@ -102,21 +122,42 @@
       throw new Error(t || 'Register failed');
     }
     const data = await res.json();
-    if(!data.token) throw new Error('No token returned');
-    setToken(data.token);
-    return parseJwt(data.token);
+    if(data && data.token){
+      setToken(data.token);
+      return parseJwt(data.token);
+    }
+    if (base) {
+      const meRes = await fetch(base + '/api/me', { credentials: 'include' });
+      if (meRes.ok) return meRes.json();
+    }
+    return null;
   }
 
   async function me(){
-    const token = localStorage.getItem('token');
-    if(!token) return null;
     const base = getApiBase();
     const local = getLocalProfile();
     if(!base) return local;
+    const token = getStoredToken();
+    const headers = {};
+    if(token && token !== 'local-google') {
+      headers['Authorization'] = 'Bearer ' + token;
+    }
     try{
-      const res = await fetch(base + '/api/me', {
-        headers: { 'Authorization': 'Bearer ' + token }
+      let res = await fetch(base + '/api/me', {
+        headers,
+        credentials: 'include'
       });
+      if (res.status === 401) {
+        const refresh = await fetch(base + '/api/auth/refresh', { method: 'POST', credentials: 'include' });
+        const refreshed = await refresh.json().catch(function(){ return {}; });
+        if (refreshed && refreshed.token) {
+          setToken(refreshed.token);
+          headers['Authorization'] = 'Bearer ' + refreshed.token;
+        }
+        if (refresh.ok) {
+          res = await fetch(base + '/api/me', { headers, credentials: 'include' });
+        }
+      }
       if(!res.ok) return local;
       return res.json();
     }catch(_){
@@ -133,6 +174,7 @@
     parseJwt,
     getApiBase,
     setToken,
+    getStoredToken,
     setLocalSession,
     getLocalProfile
   };
@@ -140,11 +182,68 @@
 
 
 // --- Google Sign-In (GIS) ---
+function normalizeOrigin(value){
+  if(!value) return "";
+  try{
+    return new URL(value).origin;
+  }catch(_){
+    return String(value || "").trim().replace(/\/$/, "");
+  }
+}
+
+function getAuthorizedOrigins(){
+  var list = Array.isArray(window.GOOGLE_AUTHORIZED_ORIGINS) ? window.GOOGLE_AUTHORIZED_ORIGINS.slice() : [];
+  return list.map(normalizeOrigin).filter(Boolean);
+}
+
+function isCurrentOriginAuthorized(){
+  var host = window.location && window.location.hostname ? window.location.hostname : "";
+  if (host === "localhost" || host === "127.0.0.1") return true;
+  var current = normalizeOrigin(window.location && window.location.origin ? window.location.origin : "");
+  var allowed = getAuthorizedOrigins();
+  if(!allowed.length || !current) return true;
+  if(allowed.includes(current)) return true;
+  try {
+    var parsedCurrent = new URL(current);
+    return allowed.some(function(entry){
+      try {
+        var parsedEntry = new URL(entry);
+        if(parsedEntry.protocol !== parsedCurrent.protocol) return false;
+        if(parsedEntry.hostname !== parsedCurrent.hostname) return false;
+        return !parsedEntry.port;
+      } catch(_){
+        return false;
+      }
+    });
+  } catch(_){
+    return false;
+  }
+}
+
 window.initGoogleLogin = function initGoogleLogin(){
   try{
+    const host = window.location && window.location.hostname ? window.location.hostname : "";
+    const port = window.location && window.location.port ? window.location.port : "";
+    if ((host === "localhost" || host === "127.0.0.1") && port === "8080") {
+      const target = window.location.protocol + "//" + host + ":8085" + window.location.pathname + window.location.search + window.location.hash;
+      if (target !== window.location.href) {
+        window.location.replace(target);
+        return;
+      }
+    }
     const clientId = window.GOOGLE_CLIENT_ID || (window.__GOOGLE_CLIENT_ID || "");
     const target = document.getElementById('googleSignInBtn');
     if(!target) return;
+    if(!isCurrentOriginAuthorized()){
+      const origin = (window.location && window.location.origin) ? window.location.origin : "this host";
+      target.innerHTML = '<div class="muted">Google Sign-In unavailable on this host.</div>';
+      const msg = document.getElementById('googleMsg');
+      if(msg){
+        msg.textContent = 'OAuth origin mismatch: add ' + origin + ' in Google Cloud Console > Authorized JavaScript origins, then refresh.';
+        msg.className = 'msg bad';
+      }
+      return;
+    }
     if(typeof google === 'undefined' || !clientId){
       target.innerHTML = '<div class="muted">Google Sign-In not configured</div>';
       return;
@@ -183,6 +282,7 @@ window.initGoogleLogin = function initGoogleLogin(){
           const res = await fetch(base + '/api/auth/google', {
             method: 'POST',
             headers: {'Content-Type':'application/json'},
+            credentials: 'include',
             body: JSON.stringify({ credential: resp.credential })
           });
           if(!res.ok){
@@ -190,16 +290,7 @@ window.initGoogleLogin = function initGoogleLogin(){
             throw new Error(t || 'Google login failed');
           }
           const data = await res.json();
-          if(!data.token){
-            if(localFallback(resp.credential)){
-              document.dispatchEvent(new Event('auth:changed'));
-              const msg = document.getElementById('googleMsg');
-              if(msg) { msg.textContent = 'Signed in with Google (local).'; msg.className = 'msg ok'; }
-              return;
-            }
-            throw new Error('No token returned');
-          }
-          if(auth.setToken) auth.setToken(data.token);
+          if(data && data.token && auth.setToken) auth.setToken(data.token);
           document.dispatchEvent(new Event('auth:changed'));
           const msg = document.getElementById('googleMsg');
           if(msg) { msg.textContent = 'Signed in with Google.'; msg.className = 'msg ok'; }
