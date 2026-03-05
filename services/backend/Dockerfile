@@ -1,5 +1,5 @@
 # Use latest LTS Node 24 for security & features
-FROM node:24-bookworm
+FROM node:24-bullseye
 
 ENV NODE_ENV=production
 WORKDIR /app

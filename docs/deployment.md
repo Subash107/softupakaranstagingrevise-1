@@ -5,7 +5,9 @@
   - `https://softupakaran.vercel.app`
   - `https://softupakaran-cf67l89wj-subash107s-projects.vercel.app`
   - `https://subash107.github.io/softupakaran/` (GitHub Pages)
+  - `http://localhost:8080` and `http://127.0.0.1:8080` for Docker/local development.
   - Any preview, staging, or local host you test.
+  - Mirror the same origins in the storefront `<meta name="google-authorized-origins">` tag (or via the `SPK_GOOGLE_AUTHORIZED_ORIGINS` localStorage override) so the UI can warn you when the current host still needs to be whitelisted.
 \- After saving the origin list, wait a minute and then refresh the browser before retrying Google sign‑in.
 
 ## Category synchronization

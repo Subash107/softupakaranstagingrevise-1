@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const fs = require("fs");
+const sqlite3 = require("sqlite3").verbose();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
@@ -12,6 +13,14 @@ const qrcode = require("qrcode");
 const { google } = require("googleapis");
 const { spawn } = require("child_process");
 const geoip = require("geoip-lite");
+
+// Ensure data folder exists and set absolute DB path before loading `./db`
+const dataFolder = path.join(__dirname, "..", "data");
+if (!fs.existsSync(dataFolder)) {
+  fs.mkdirSync(dataFolder, { recursive: true });
+}
+const dbPath = process.env.DATABASE_FILE || path.join(dataFolder, "softupakaran.db");
+process.env.DATABASE_FILE = dbPath;
 
 const db = require("./db");
 const initDb = require("./init-db");
@@ -47,16 +56,117 @@ app.set("trust proxy", 1);
 // healthcheck
 app.get("/healthz", (req, res) => res.json({ status: "ok" }));
 const FRONTEND_URL = process.env.FRONTEND_URL || "https://lamasubash107.gitlab.io/softupakaran/";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
+const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
+const OPENAI_SYSTEM_PROMPT =
+  process.env.OPENAI_SYSTEM_PROMPT ||
+  "You are SoftUpakaran's friendly assistant. Answer customer questions about digital delivery, subscriptions, payments, refunds, admin support, and WhatsApp proof. Keep responses short, actionable, and reference Nepal where it helps.";
 app.get("/", (_req, res) => res.redirect(302, FRONTEND_URL));
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me";
-const TOKEN_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
+const ACCESS_TOKEN_EXPIRES_IN = process.env.ACCESS_TOKEN_EXPIRES_IN || process.env.JWT_EXPIRES_IN || "15m";
+const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || "30d";
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || `${JWT_SECRET}:refresh`;
+const ACCESS_TOKEN_COOKIE_NAME = process.env.ACCESS_TOKEN_COOKIE_NAME || "spk_access";
+const REFRESH_TOKEN_COOKIE_NAME = process.env.REFRESH_TOKEN_COOKIE_NAME || "spk_refresh";
+const COOKIE_SECURE_SETTING = String(process.env.COOKIE_SECURE || "").trim().toLowerCase();
+const COOKIE_SECURE =
+  COOKIE_SECURE_SETTING === "true"
+    ? true
+    : COOKIE_SECURE_SETTING === "false"
+      ? false
+      : process.env.NODE_ENV === "production";
+const COOKIE_DOMAIN = String(process.env.COOKIE_DOMAIN || "").trim();
+const COOKIE_SAME_SITE_RAW = String(process.env.COOKIE_SAME_SITE || (COOKIE_SECURE ? "none" : "lax")).toLowerCase();
+const COOKIE_SAME_SITE = ["lax", "strict", "none"].includes(COOKIE_SAME_SITE_RAW)
+  ? COOKIE_SAME_SITE_RAW
+  : (COOKIE_SECURE ? "none" : "lax");
+const ACCESS_TOKEN_MAX_AGE_MS = parseDurationToMs(ACCESS_TOKEN_EXPIRES_IN, 15 * 60 * 1000);
+const REFRESH_TOKEN_MAX_AGE_MS = parseDurationToMs(REFRESH_TOKEN_EXPIRES_IN, 30 * 24 * 60 * 60 * 1000);
+const AUTH_RATE_LIMIT_WINDOW_MS = parseDurationToMs(process.env.AUTH_RATE_LIMIT_WINDOW || "1m", 60 * 1000);
+const AUTH_RATE_LIMIT_LOGIN_MAX = parsePositiveInt(process.env.AUTH_RATE_LIMIT_LOGIN_MAX, 20);
+const AUTH_RATE_LIMIT_REGISTER_MAX = parsePositiveInt(process.env.AUTH_RATE_LIMIT_REGISTER_MAX, 8);
+const AUTH_RATE_LIMIT_GOOGLE_MAX = parsePositiveInt(process.env.AUTH_RATE_LIMIT_GOOGLE_MAX, 20);
+const AUTH_RATE_LIMIT_REFRESH_MAX = parsePositiveInt(process.env.AUTH_RATE_LIMIT_REFRESH_MAX, 40);
+const AUTH_LOCKOUT_THRESHOLD = parsePositiveInt(process.env.AUTH_LOCKOUT_THRESHOLD, 6);
+const AUTH_LOCKOUT_WINDOW_MS = parseDurationToMs(process.env.AUTH_LOCKOUT_WINDOW || "15m", 15 * 60 * 1000);
+const AUTH_LOCKOUT_DURATION_MS = parseDurationToMs(process.env.AUTH_LOCKOUT_DURATION || "30m", 30 * 60 * 1000);
+const GOOGLE_AUDIENCES = parseCommaList(process.env.GOOGLE_CLIENT_IDS || process.env.GOOGLE_CLIENT_ID || "");
+const GOOGLE_ID_CLIENT = new google.auth.OAuth2();
 const BACKUP_TOKEN = process.env.BACKUP_TOKEN || "";
 
 // Init DB schema + seed demo data
 initDb();
 
+function parseDurationToMs(value, fallbackMs) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) return fallbackMs;
+  if (/^\d+$/.test(raw)) return Number(raw) * 1000;
+  const match = raw.match(/^(\d+)(ms|s|m|h|d|w)$/i);
+  if (!match) return fallbackMs;
+  const amount = Number(match[1]);
+  const unit = match[2].toLowerCase();
+  const unitMs = {
+    ms: 1,
+    s: 1000,
+    m: 60 * 1000,
+    h: 60 * 60 * 1000,
+    d: 24 * 60 * 60 * 1000,
+    w: 7 * 24 * 60 * 60 * 1000,
+  }[unit];
+  return unitMs ? amount * unitMs : fallbackMs;
+}
+
+function parsePositiveInt(value, fallback) {
+  const num = Number.parseInt(String(value ?? "").trim(), 10);
+  if (!Number.isFinite(num) || Number.isNaN(num) || num <= 0) return fallback;
+  return num;
+}
+
+function parseCommaList(value = "") {
+  return String(value || "")
+    .split(/[,\s]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizeOrigin(value = "") {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (raw === "*") return "*";
+  try {
+    return new URL(raw).origin;
+  } catch (_) {
+    return "";
+  }
+}
+
+function buildAllowedCorsOrigins() {
+  const defaults = [
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+    "http://localhost:8085",
+    "http://127.0.0.1:8085",
+    FRONTEND_URL,
+  ];
+  const fromEnv = [
+    ...parseCommaList(process.env.CORS_ALLOWED_ORIGINS || ""),
+    ...parseCommaList(process.env.GOOGLE_AUTHORIZED_ORIGINS || ""),
+    ...parseCommaList(process.env.SPK_GOOGLE_AUTHORIZED_ORIGINS || ""),
+  ];
+  const combined = [...defaults, ...fromEnv].map(normalizeOrigin).filter(Boolean);
+  return Array.from(new Set(combined));
+}
+
+const CORS_ALLOWED_ORIGINS = buildAllowedCorsOrigins();
+const CORS_ALLOW_ALL = CORS_ALLOWED_ORIGINS.includes("*");
+
 const corsOptions = {
-  origin: (origin, cb) => cb(null, true), // dev: allow all; harden in prod
+  origin: (origin, cb) => {
+    if (!origin || CORS_ALLOW_ALL) return cb(null, true);
+    const normalized = normalizeOrigin(origin);
+    if (normalized && CORS_ALLOWED_ORIGINS.includes(normalized)) return cb(null, true);
+    return cb(null, false);
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Admin-Token"],
@@ -107,6 +217,27 @@ function buildBlogPostResponse(row) {
     content: row.content || "",
     featured_image: row.featured_image || "",
     published_at: row.published_at || row.created_at,
+    status: row.status || "published",
+    created_at: row.created_at,
+    updated_at: row.updated_at
+  };
+}
+function normalizeSliderStatus(value) {
+  const v = String(value || "").toLowerCase();
+  return v === "draft" ? "draft" : "published";
+}
+function buildSliderBannerResponse(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    title: row.title,
+    subtitle: row.subtitle || "",
+    link: row.link || "",
+    image: row.image || "",
+    badge: row.badge || "",
+    metric: row.metric || "",
+    metricLabel: row.metric_label || "",
+    orderIndex: row.order_index || 0,
     status: row.status || "published",
     created_at: row.created_at,
     updated_at: row.updated_at
@@ -200,6 +331,31 @@ async function appendBackupRecord(record) {
   }
 }
 
+async function callOpenAIChat(messages = []) {
+  if (!OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY missing");
+  }
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: OPENAI_MODEL,
+      messages,
+      temperature: 0.4,
+      max_tokens: 400,
+    }),
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`OpenAI error ${response.status}: ${detail}`);
+  }
+  const payload = await response.json();
+  return payload?.choices?.[0]?.message?.content?.trim() || "";
+}
+
 app.use((req, res, next) => {
   req.requestId = req.headers["x-request-id"] || crypto.randomUUID();
   res.setHeader("X-Request-ID", req.requestId);
@@ -212,7 +368,8 @@ fs.mkdirSync(uploadsDir, { recursive: true });
 app.use("/uploads", express.static(uploadsDir));
 const LOG_DIR = path.join(__dirname, "..", "logs");
 fs.mkdirSync(LOG_DIR, { recursive: true });
-const dbPath = process.env.DATABASE_FILE || path.join(__dirname, "..", "data", "softupakaran.db");
+// `dbPath` is already defined near the top of this file (initialized before loading ./db)
+// Reuse that variable instead of redeclaring it here.
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
@@ -303,16 +460,319 @@ async function setAdminTotpPending(secret) {
   await setSetting("admin_totp_pending", secret || "");
 }
 
-function signToken(user) {
-  // include email/name so the frontend can show "Signed in as ..." without an extra call
-  const payload = {
+function buildJwtPayload(user) {
+  return {
     userId: user.id,
     role: user.role || "user",
     email: user.email || undefined,
     name: user.name || undefined,
     totp: !!user.totp,
   };
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_EXPIRES_IN });
+}
+
+function signToken(user) {
+  return jwt.sign(buildJwtPayload(user), JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRES_IN });
+}
+
+function signRefreshToken(user, refreshJti) {
+  return jwt.sign(buildJwtPayload(user), REFRESH_TOKEN_SECRET, {
+    expiresIn: REFRESH_TOKEN_EXPIRES_IN,
+    jwtid: refreshJti,
+  });
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function parseIsoToMs(value) {
+  const t = Date.parse(String(value || ""));
+  return Number.isFinite(t) ? t : 0;
+}
+
+function hashToken(value = "") {
+  return crypto.createHash("sha256").update(String(value || "")).digest("hex");
+}
+
+const authRateLimitStore = new Map();
+
+function cleanupAuthRateLimitStore(now) {
+  if (authRateLimitStore.size < 2000) return;
+  for (const [key, state] of authRateLimitStore.entries()) {
+    if (!state || state.resetAt <= now) authRateLimitStore.delete(key);
+  }
+}
+
+function createAuthRateLimiter(label, maxRequests, windowMs) {
+  return (req, res, next) => {
+    const now = Date.now();
+    cleanupAuthRateLimitStore(now);
+    const ip = String(req.ip || "unknown");
+    const key = `${label}:${ip}`;
+    const existing = authRateLimitStore.get(key);
+    if (!existing || existing.resetAt <= now) {
+      authRateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+    existing.count += 1;
+    if (existing.count > maxRequests) {
+      const retryAfter = Math.max(1, Math.ceil((existing.resetAt - now) / 1000));
+      res.setHeader("Retry-After", String(retryAfter));
+      return res.status(429).json({
+        error: "Too many auth requests. Please try again shortly.",
+        retry_after_seconds: retryAfter,
+      });
+    }
+    return next();
+  };
+}
+
+const authLoginRateLimit = createAuthRateLimiter("auth_login", AUTH_RATE_LIMIT_LOGIN_MAX, AUTH_RATE_LIMIT_WINDOW_MS);
+const authRegisterRateLimit = createAuthRateLimiter("auth_register", AUTH_RATE_LIMIT_REGISTER_MAX, AUTH_RATE_LIMIT_WINDOW_MS);
+const authGoogleRateLimit = createAuthRateLimiter("auth_google", AUTH_RATE_LIMIT_GOOGLE_MAX, AUTH_RATE_LIMIT_WINDOW_MS);
+const authRefreshRateLimit = createAuthRateLimiter("auth_refresh", AUTH_RATE_LIMIT_REFRESH_MAX, AUTH_RATE_LIMIT_WINDOW_MS);
+
+function normalizeClientIp(req) {
+  return String(req.ip || req.headers["x-forwarded-for"] || "unknown")
+    .split(",")[0]
+    .replace(/^::ffff:/i, "")
+    .trim() || "unknown";
+}
+
+function buildAuthLockoutKeys(req, email) {
+  const keys = [];
+  const normalizedEmail = sanitizeEmail(email || "");
+  if (normalizedEmail) keys.push(`email:${normalizedEmail}`);
+  const ip = normalizeClientIp(req);
+  if (ip && ip !== "unknown") keys.push(`ip:${ip}`);
+  return Array.from(new Set(keys));
+}
+
+async function getAuthLockoutState(lockKey) {
+  return dbGet("SELECT * FROM auth_lockouts WHERE lock_key = ?", [lockKey]).catch(() => null);
+}
+
+async function upsertAuthLockoutState(lockKey, state) {
+  await dbRun(
+    `INSERT INTO auth_lockouts (lock_key, failed_count, first_failed_at, last_failed_at, lock_until, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?)
+     ON CONFLICT(lock_key) DO UPDATE SET
+       failed_count = excluded.failed_count,
+       first_failed_at = excluded.first_failed_at,
+       last_failed_at = excluded.last_failed_at,
+       lock_until = excluded.lock_until,
+       updated_at = excluded.updated_at`,
+    [
+      lockKey,
+      state.failed_count || 0,
+      state.first_failed_at || null,
+      state.last_failed_at || null,
+      state.lock_until || null,
+      nowIso(),
+    ]
+  );
+}
+
+async function clearAuthLockoutState(lockKeys = []) {
+  for (const key of lockKeys) {
+    await dbRun("DELETE FROM auth_lockouts WHERE lock_key = ?", [key]).catch(() => null);
+  }
+}
+
+async function getActiveAuthLockout(lockKeys = []) {
+  const now = Date.now();
+  let lockedUntil = 0;
+  for (const key of lockKeys) {
+    const row = await getAuthLockoutState(key);
+    if (!row) continue;
+    const until = parseIsoToMs(row.lock_until);
+    if (until > now) lockedUntil = Math.max(lockedUntil, until);
+  }
+  if (!lockedUntil) return { locked: false, retry_after_seconds: 0 };
+  return {
+    locked: true,
+    retry_after_seconds: Math.max(1, Math.ceil((lockedUntil - now) / 1000)),
+  };
+}
+
+async function recordAuthFailure(lockKeys = []) {
+  if (!lockKeys.length) return;
+  const now = Date.now();
+  const nowDateIso = nowIso();
+  for (const key of lockKeys) {
+    const row = await getAuthLockoutState(key);
+    const lastFailedMs = parseIsoToMs(row?.last_failed_at);
+    const firstFailedMs = parseIsoToMs(row?.first_failed_at);
+    let failedCount = Number(row?.failed_count || 0);
+    let firstFailedAt = row?.first_failed_at || nowDateIso;
+    if (!lastFailedMs || (now - lastFailedMs) > AUTH_LOCKOUT_WINDOW_MS) {
+      failedCount = 0;
+      firstFailedAt = nowDateIso;
+    } else if (!firstFailedMs) {
+      firstFailedAt = nowDateIso;
+    }
+    failedCount += 1;
+    let lockUntil = row?.lock_until || null;
+    if (failedCount >= AUTH_LOCKOUT_THRESHOLD) {
+      lockUntil = new Date(now + AUTH_LOCKOUT_DURATION_MS).toISOString();
+      failedCount = 0;
+      firstFailedAt = nowDateIso;
+    }
+    await upsertAuthLockoutState(key, {
+      failed_count: failedCount,
+      first_failed_at: firstFailedAt,
+      last_failed_at: nowDateIso,
+      lock_until: lockUntil,
+    });
+  }
+}
+
+async function storeRefreshTokenRecord({ jti, userId, tokenHash, parentJti, issuedAt, expiresAt }) {
+  await dbRun(
+    `INSERT INTO refresh_tokens (jti, user_id, token_hash, parent_jti, issued_at, expires_at, consumed_at, revoked_at, revoked_reason, replaced_by_jti, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, ?)`,
+    [jti, userId, tokenHash, parentJti || null, issuedAt, expiresAt, nowIso()]
+  );
+}
+
+async function getRefreshTokenRecord(jti) {
+  return dbGet("SELECT * FROM refresh_tokens WHERE jti = ?", [jti]).catch(() => null);
+}
+
+async function consumeRefreshTokenRecord(jti, tokenHashValue, replacedByJti) {
+  return dbRun(
+    `UPDATE refresh_tokens
+     SET consumed_at = ?, replaced_by_jti = ?, updated_at = ?
+     WHERE jti = ? AND token_hash = ? AND consumed_at IS NULL AND revoked_at IS NULL`,
+    [nowIso(), replacedByJti || null, nowIso(), jti, tokenHashValue]
+  );
+}
+
+async function revokeRefreshTokenRecord(jti, reason = "revoked") {
+  if (!jti) return;
+  await dbRun(
+    `UPDATE refresh_tokens
+     SET revoked_at = COALESCE(revoked_at, ?), revoked_reason = COALESCE(revoked_reason, ?), updated_at = ?
+     WHERE jti = ?`,
+    [nowIso(), reason, nowIso(), jti]
+  ).catch(() => null);
+}
+
+async function revokeAllRefreshTokensForUser(userId, reason = "revoked") {
+  if (!userId) return;
+  await dbRun(
+    `UPDATE refresh_tokens
+     SET revoked_at = COALESCE(revoked_at, ?), revoked_reason = COALESCE(revoked_reason, ?), updated_at = ?
+     WHERE user_id = ? AND revoked_at IS NULL`,
+    [nowIso(), reason, nowIso(), userId]
+  ).catch(() => null);
+}
+
+function buildSessionTokens(user, parentRefreshJti = null) {
+  const refreshJti = crypto.randomUUID();
+  const accessToken = signToken(user);
+  const refreshToken = signRefreshToken(user, refreshJti);
+  return {
+    accessToken,
+    refreshToken,
+    refreshJti,
+    parentRefreshJti: parentRefreshJti || null,
+    refreshExpiresAt: new Date(Date.now() + REFRESH_TOKEN_MAX_AGE_MS).toISOString(),
+  };
+}
+
+function parseCookies(rawValue = "") {
+  const raw = String(rawValue || "").trim();
+  if (!raw) return {};
+  return raw
+    .split(";")
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .reduce((acc, part) => {
+      const eq = part.indexOf("=");
+      if (eq <= 0) return acc;
+      const key = part.slice(0, eq).trim();
+      const value = part.slice(eq + 1).trim();
+      if (!key) return acc;
+      try {
+        acc[key] = decodeURIComponent(value);
+      } catch (_) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {});
+}
+
+function getCookieValue(req, name) {
+  if (!name) return "";
+  if (!req._parsedCookies) {
+    req._parsedCookies = parseCookies(req.headers.cookie || "");
+  }
+  return req._parsedCookies[name] || "";
+}
+
+function getBearerToken(req) {
+  const header = req.headers.authorization || "";
+  return header.startsWith("Bearer ") ? header.slice(7) : "";
+}
+
+function getAccessToken(req) {
+  return getBearerToken(req) || getCookieValue(req, ACCESS_TOKEN_COOKIE_NAME) || "";
+}
+
+function getRefreshToken(req) {
+  return getCookieValue(req, REFRESH_TOKEN_COOKIE_NAME) || "";
+}
+
+function makeCookieOptions(maxAgeMs) {
+  const options = {
+    httpOnly: true,
+    secure: COOKIE_SECURE,
+    sameSite: COOKIE_SAME_SITE,
+    path: "/",
+    maxAge: maxAgeMs,
+  };
+  if (COOKIE_DOMAIN) options.domain = COOKIE_DOMAIN;
+  return options;
+}
+
+function makeCookieClearOptions() {
+  const options = {
+    httpOnly: true,
+    secure: COOKIE_SECURE,
+    sameSite: COOKIE_SAME_SITE,
+    path: "/",
+  };
+  if (COOKIE_DOMAIN) options.domain = COOKIE_DOMAIN;
+  return options;
+}
+
+function writeSessionCookies(res, tokens) {
+  res.cookie(ACCESS_TOKEN_COOKIE_NAME, tokens.accessToken, makeCookieOptions(ACCESS_TOKEN_MAX_AGE_MS));
+  res.cookie(REFRESH_TOKEN_COOKIE_NAME, tokens.refreshToken, makeCookieOptions(REFRESH_TOKEN_MAX_AGE_MS));
+}
+
+async function issueSession(res, user, options = {}) {
+  const tokens = buildSessionTokens(user, options.parentRefreshJti || null);
+  if (options.revoke_existing === true) {
+    await revokeAllRefreshTokensForUser(user.id, options.revoke_reason || "new_login");
+  }
+  await storeRefreshTokenRecord({
+    jti: tokens.refreshJti,
+    userId: user.id,
+    tokenHash: hashToken(tokens.refreshToken),
+    parentJti: tokens.parentRefreshJti,
+    issuedAt: nowIso(),
+    expiresAt: tokens.refreshExpiresAt,
+  });
+  writeSessionCookies(res, tokens);
+  return tokens;
+}
+
+function clearSession(res) {
+  const clearOptions = makeCookieClearOptions();
+  res.clearCookie(ACCESS_TOKEN_COOKIE_NAME, clearOptions);
+  res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, clearOptions);
 }
 
 function getAdminToken(req) {
@@ -325,8 +785,7 @@ function hasLegacyAdminToken(req) {
 }
 
 function authOptional(req, _res, next) {
-  const header = req.headers.authorization || "";
-  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+  const token = getAccessToken(req);
   if (!token) return next();
   try {
     req.user = jwt.verify(token, JWT_SECRET);
@@ -337,8 +796,7 @@ function authOptional(req, _res, next) {
 }
 
 function authRequired(req, res, next) {
-  const header = req.headers.authorization || "";
-  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+  const token = getAccessToken(req);
   if (!token) return res.status(401).json({ error: "Missing token" });
   try {
     req.user = jwt.verify(token, JWT_SECRET);
@@ -354,8 +812,7 @@ async function adminRequired(req, res, next) {
     if (totpEnabled) return res.status(401).json({ error: "2FA required" });
     return next();
   }
-  const header = req.headers.authorization || "";
-  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+  const token = getAccessToken(req);
   if (!token) return res.status(401).json({ error: "Unauthorized" });
   try {
     const payload = jwt.verify(token, JWT_SECRET);
@@ -458,8 +915,27 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+app.post("/api/chat/", async (req, res) => {
+  const prompt = sanitizeString((req.body && req.body.message) || "");
+  if (!prompt) {
+    return res.status(400).json({ error: "Message is required" });
+  }
+
+  try {
+    const reply = await callOpenAIChat([
+      { role: "system", content: OPENAI_SYSTEM_PROMPT },
+      { role: "user", content: prompt },
+    ]);
+    const finalReply = reply || "Let me double-check and get back to you in a moment.";
+    res.json({ reply: finalReply });
+  } catch (err) {
+    console.error("AI chat error:", err?.message || err);
+    res.status(502).json({ error: "Failed to generate a response. Please try again later." });
+  }
+});
+
 // ---------- auth & users ----------
-app.post("/api/auth/register", async (req, res) => {
+app.post("/api/auth/register", authRegisterRateLimit, async (req, res) => {
   const { name, email, password, phone, whatsapp } = req.body || {};
   const cleanEmail = sanitizeEmail(email);
   const cleanPassword = typeof password === "string" ? password.trim() : "";
@@ -480,7 +956,8 @@ app.post("/api/auth/register", async (req, res) => {
     );
 
     const user = { id: result.lastID, role: "user", email: cleanEmail, name: cleanName };
-    res.json({ token: signToken(user) });
+    const { accessToken } = await issueSession(res, user);
+    res.json({ token: accessToken });
   } catch (err) {
     console.error("Register failed:", err.message);
     res.status(500).json({ error: "Register failed" });
@@ -519,51 +996,192 @@ app.post("/api/admin/users", adminRequired, async (req, res) => {
   }
 });
 
-app.post("/api/auth/login", async (req, res) => {
+app.post("/api/auth/login", authLoginRateLimit, async (req, res) => {
   const { email, password, otp } = req.body || {};
   const cleanEmail = sanitizeEmail(email);
   const cleanPassword = typeof password === "string" ? password : "";
   if (!cleanEmail || !cleanPassword) return res.status(400).json({ error: "Email and password are required" });
+  const lockKeys = buildAuthLockoutKeys(req, cleanEmail);
 
   try {
+    const lockout = await getActiveAuthLockout(lockKeys);
+    if (lockout.locked) {
+      res.setHeader("Retry-After", String(lockout.retry_after_seconds));
+      return res.status(429).json({
+        error: "Too many failed login attempts. Please try again later.",
+        retry_after_seconds: lockout.retry_after_seconds,
+      });
+    }
+
     const user = await dbGet(
       "SELECT id, email, password_hash, role, name, whatsapp, phone, created_at FROM users WHERE email = ?",
       [cleanEmail]
     ).catch(() => null);
 
-    if (!user) return res.status(401).json({ error: "Invalid credentials" });
+    if (!user) {
+      await recordAuthFailure(lockKeys);
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
 
     const ok = await bcrypt.compare(password, user.password_hash);
-    if (!ok) return res.status(401).json({ error: "Invalid credentials" });
+    if (!ok) {
+      await recordAuthFailure(lockKeys);
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
 
     if (String(user.role || "").toLowerCase() === "admin") {
       const secret = await getAdminTotpSecret();
       if (secret) {
         const token = String(otp || "").trim();
-        if (!token) return res.status(401).json({ error: "2FA required" });
+        if (!token) {
+          await recordAuthFailure(lockKeys);
+          return res.status(401).json({ error: "2FA required" });
+        }
         const valid = speakeasy.totp.verify({
           secret,
           encoding: "base32",
           token,
           window: 1,
         });
-        if (!valid) return res.status(401).json({ error: "Invalid 2FA code" });
+        if (!valid) {
+          await recordAuthFailure(lockKeys);
+          return res.status(401).json({ error: "Invalid 2FA code" });
+        }
+        await clearAuthLockoutState(lockKeys);
         await recordAdminLoginEvent(req, user.id);
-        return res.json({ token: signToken({ ...user, totp: true }), totp_enabled: true });
+        const { accessToken } = await issueSession(res, { ...user, totp: true }, { revoke_existing: false });
+        return res.json({ token: accessToken, totp_enabled: true });
       }
+      await clearAuthLockoutState(lockKeys);
       await recordAdminLoginEvent(req, user.id);
+      const { accessToken } = await issueSession(res, { ...user, totp: false }, { revoke_existing: false });
       return res.json({
-        token: signToken({ ...user, totp: false }),
+        token: accessToken,
         totp_enabled: false,
         needs_2fa_setup: true,
       });
     }
 
-    res.json({ token: signToken({ ...user, totp: false }), totp_enabled: false });
+    await clearAuthLockoutState(lockKeys);
+    const { accessToken } = await issueSession(res, { ...user, totp: false }, { revoke_existing: false });
+    res.json({ token: accessToken, totp_enabled: false });
   } catch (err) {
     console.error("Login failed:", err.message);
     res.status(500).json({ error: "Login failed" });
   }
+});
+
+app.post("/api/auth/refresh", authRefreshRateLimit, async (req, res) => {
+  const refreshToken = getRefreshToken(req);
+  if (!refreshToken) {
+    clearSession(res);
+    return res.status(401).json({ error: "Missing refresh token" });
+  }
+  let payload;
+  try {
+    payload = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET);
+  } catch (_) {
+    clearSession(res);
+    return res.status(401).json({ error: "Invalid refresh token" });
+  }
+  try {
+    const jti = String(payload.jti || "").trim();
+    if (!jti) {
+      clearSession(res);
+      return res.status(401).json({ error: "Invalid refresh token" });
+    }
+    const record = await getRefreshTokenRecord(jti);
+    if (!record || record.token_hash !== hashToken(refreshToken)) {
+      if (payload.userId) {
+        await revokeAllRefreshTokensForUser(payload.userId, "refresh_token_mismatch");
+      }
+      clearSession(res);
+      return res.status(401).json({ error: "Invalid refresh token" });
+    }
+    if (record.revoked_at) {
+      clearSession(res);
+      return res.status(401).json({ error: "Refresh token revoked" });
+    }
+    if (record.consumed_at) {
+      await revokeAllRefreshTokensForUser(record.user_id, "refresh_token_reuse_detected");
+      clearSession(res);
+      return res.status(401).json({ error: "Refresh token already used" });
+    }
+    const expiresAtMs = parseIsoToMs(record.expires_at);
+    if (expiresAtMs && expiresAtMs <= Date.now()) {
+      await revokeRefreshTokenRecord(jti, "refresh_token_expired");
+      clearSession(res);
+      return res.status(401).json({ error: "Refresh token expired" });
+    }
+
+    const user = await dbGet(
+      "SELECT id, email, role, name FROM users WHERE id = ?",
+      [payload.userId]
+    ).catch(() => null);
+    if (!user) {
+      await revokeRefreshTokenRecord(jti, "user_not_found");
+      clearSession(res);
+      return res.status(401).json({ error: "Session expired" });
+    }
+    if (String(user.role || "").toLowerCase() === "admin") {
+      const secret = await getAdminTotpSecret().catch(() => "");
+      if (secret && payload.totp !== true) {
+        await revokeRefreshTokenRecord(jti, "admin_totp_required");
+        clearSession(res);
+        return res.status(401).json({ error: "2FA required" });
+      }
+    }
+    const sessionUser = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+      totp: payload.totp === true,
+    };
+    const newSessionTokens = buildSessionTokens(sessionUser, jti);
+    const consumeResult = await consumeRefreshTokenRecord(jti, hashToken(refreshToken), newSessionTokens.refreshJti);
+    if (!consumeResult || !consumeResult.changes) {
+      await revokeAllRefreshTokensForUser(user.id, "refresh_token_reuse_race");
+      clearSession(res);
+      return res.status(401).json({ error: "Refresh token already used" });
+    }
+    await storeRefreshTokenRecord({
+      jti: newSessionTokens.refreshJti,
+      userId: user.id,
+      tokenHash: hashToken(newSessionTokens.refreshToken),
+      parentJti: jti,
+      issuedAt: nowIso(),
+      expiresAt: newSessionTokens.refreshExpiresAt,
+    });
+    writeSessionCookies(res, newSessionTokens);
+    const accessToken = newSessionTokens.accessToken;
+    return res.json({ ok: true, token: accessToken });
+  } catch (err) {
+    console.error("Refresh failed:", err.message);
+    clearSession(res);
+    return res.status(500).json({ error: "Refresh failed" });
+  }
+});
+
+app.post("/api/auth/logout", async (req, res) => {
+  const refreshToken = getRefreshToken(req);
+  if (refreshToken) {
+    try {
+      const payload = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET);
+      const jti = String(payload?.jti || "").trim();
+      if (jti) {
+        await revokeRefreshTokenRecord(jti, "logout");
+      }
+    } catch (_) {
+      const decoded = jwt.decode(refreshToken);
+      const jti = String(decoded?.jti || "").trim();
+      if (jti) {
+        await revokeRefreshTokenRecord(jti, "logout_invalid");
+      }
+    }
+  }
+  clearSession(res);
+  res.json({ ok: true });
 });
 
 app.get("/api/me", authRequired, async (req, res) => {
@@ -728,8 +1346,10 @@ app.post("/api/admin/backups/run", backupAuth, async (_req, res) => {
 app.post("/api/feedback", authOptional, async (req, res) => {
   const { name, email, rating, message } = req.body || {};
   const cleanMessage = sanitizeString(message);
-  if (!cleanMessage) return res.status(400).json({ error: "Message is required" });
   const ratingValue = normalizeRating(rating);
+  if (!cleanMessage && ratingValue === null) {
+    return res.status(400).json({ error: "Message or rating is required" });
+  }
   if (rating !== undefined && rating !== null && rating !== "" && ratingValue === null) {
     return res.status(400).json({ error: "Rating must be between 1 and 5" });
   }
@@ -775,6 +1395,29 @@ app.get("/api/public/feedback", async (req, res) => {
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: "Failed to load feedback" });
+  }
+});
+
+app.post("/api/ai-chat", async (req, res) => {
+  if (!OPENAI_API_KEY) {
+    return res.status(503).json({ error: "AI assistant not configured" });
+  }
+  const message = String((req.body || {}).message || "").trim();
+  if (!message) {
+    return res.status(400).json({ error: "Message is required" });
+  }
+  try {
+    const answer = await callOpenAIChat([
+      { role: "system", content: OPENAI_SYSTEM_PROMPT },
+      { role: "user", content: message },
+    ]);
+    if (!answer) {
+      return res.status(502).json({ error: "AI assistant responded with empty text" });
+    }
+    res.json({ answer });
+  } catch (err) {
+    console.error("AI chat failed:", err.message);
+    res.status(502).json({ error: "AI assistant failed", detail: err.message });
   }
 });
 
@@ -1150,6 +1793,18 @@ app.get("/api/public/blog-posts/:slug", async (req, res) => {
   }
 });
 
+app.get("/api/public/slider-banners", async (req, res) => {
+  try {
+    const rows = await dbAll(
+      "SELECT * FROM slider_banners WHERE status = 'published' ORDER BY order_index ASC"
+    );
+    res.json((rows || []).map(buildSliderBannerResponse));
+  } catch (err) {
+    console.error("Failed to load slider banners:", err.message);
+    res.status(500).json({ error: "Failed to load slider banners" });
+  }
+});
+
 
 // ---------- admin: products CRUD + search ----------
 
@@ -1395,6 +2050,117 @@ app.patch("/api/admin/blog-posts/:id", adminRequired, express.json(), async (req
   }
 });
 
+app.get("/api/admin/slider-banners", adminRequired, async (req, res) => {
+  try {
+    const rows = await dbAll("SELECT * FROM slider_banners ORDER BY order_index ASC");
+    res.json((rows || []).map(buildSliderBannerResponse));
+  } catch (err) {
+    console.error("Failed to load slider banners:", err.message);
+    res.status(500).json({ error: "Failed to load slider banners" });
+  }
+});
+
+app.post("/api/admin/slider-banners", adminRequired, express.json(), async (req, res) => {
+  const body = req.body || {};
+  const title = sanitizeString(body.title);
+  if (!title) return res.status(400).json({ error: "Title is required" });
+  const subtitle = sanitizeString(body.subtitle || body.sub);
+  const link = sanitizeString(body.link);
+  const image = sanitizeString(body.image);
+  const badge = sanitizeString(body.badge);
+  const metric = sanitizeString(body.metric);
+  const metricLabel = sanitizeString(body.metric_label || body.metricLabel);
+  const orderIndex = clampNumber(parseInteger(body.order_index, 0), 0, Number.MAX_SAFE_INTEGER, 0);
+  const status = normalizeSliderStatus(body.status);
+  const now = new Date().toISOString();
+  try {
+    const result = await dbRun(
+      `INSERT INTO slider_banners (title, subtitle, link, image, badge, metric, metric_label, order_index, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [title, subtitle || null, link || null, image || null, badge || null, metric || null, metricLabel || null, orderIndex, status, now, now]
+    );
+    const row = await dbGet("SELECT * FROM slider_banners WHERE id = ?", [result.lastID]);
+    res.status(201).json(buildSliderBannerResponse(row));
+  } catch (err) {
+    console.error("Failed to create slider banner:", err.message);
+    res.status(500).json({ error: "Failed to create slider banner" });
+  }
+});
+
+app.patch("/api/admin/slider-banners/:id", adminRequired, express.json(), async (req, res) => {
+  const id = parseInteger(req.params.id, null);
+  if (!id) return res.status(400).json({ error: "Invalid id" });
+  const body = req.body || {};
+  const fields = [];
+  const params = [];
+  if (body.title !== undefined) {
+    const title = sanitizeString(body.title);
+    if (!title) return res.status(400).json({ error: "Title is required" });
+    fields.push("title = ?");
+    params.push(title);
+  }
+  if (body.subtitle !== undefined || body.sub !== undefined) {
+    fields.push("subtitle = ?");
+    params.push(sanitizeString(body.subtitle || body.sub) || null);
+  }
+  if (body.link !== undefined) {
+    fields.push("link = ?");
+    params.push(sanitizeString(body.link) || null);
+  }
+  if (body.image !== undefined) {
+    fields.push("image = ?");
+    params.push(sanitizeString(body.image) || null);
+  }
+  if (body.badge !== undefined) {
+    fields.push("badge = ?");
+    params.push(sanitizeString(body.badge) || null);
+  }
+  if (body.metric !== undefined) {
+    fields.push("metric = ?");
+    params.push(sanitizeString(body.metric) || null);
+  }
+  if (body.metric_label !== undefined || body.metricLabel !== undefined) {
+    fields.push("metric_label = ?");
+    params.push(sanitizeString(body.metric_label || body.metricLabel) || null);
+  }
+  if (body.order_index !== undefined) {
+    const orderIndex = clampNumber(parseInteger(body.order_index, 0), 0, Number.MAX_SAFE_INTEGER, 0);
+    fields.push("order_index = ?");
+    params.push(orderIndex);
+  }
+  if (body.status !== undefined) {
+    fields.push("status = ?");
+    params.push(normalizeSliderStatus(body.status));
+  }
+  if (!fields.length) return res.status(400).json({ error: "No changes provided" });
+  const now = new Date().toISOString();
+  fields.push("updated_at = ?");
+  params.push(now);
+  params.push(id);
+  try {
+    const result = await dbRun(`UPDATE slider_banners SET ${fields.join(", ")} WHERE id = ?`, params);
+    if (!result.changes) return res.status(404).json({ error: "Not found" });
+    const row = await dbGet("SELECT * FROM slider_banners WHERE id = ?", [id]);
+    res.json(buildSliderBannerResponse(row));
+  } catch (err) {
+    console.error("Failed to update slider banner:", err.message);
+    res.status(500).json({ error: "Failed to update slider banner" });
+  }
+});
+
+app.delete("/api/admin/slider-banners/:id", adminRequired, async (req, res) => {
+  const id = parseInteger(req.params.id, null);
+  if (!id) return res.status(400).json({ error: "Invalid id" });
+  try {
+    const result = await dbRun("DELETE FROM slider_banners WHERE id = ?", [id]);
+    if (!result.changes) return res.status(404).json({ error: "Not found" });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Failed to delete slider banner:", err.message);
+    res.status(500).json({ error: "Failed to delete slider banner" });
+  }
+});
+
 app.delete("/api/admin/blog-posts/:id", adminRequired, async (req, res) => {
   const id = parseInteger(req.params.id, null);
   if (!id) return res.status(400).json({ error: "Invalid id" });
@@ -1513,32 +2279,33 @@ app.get("/api/orders", adminRequired, (req, res) => {
 
 
 
-// ---------- Google sign-in (lightweight) ----------
-// Accepts Google credential JWT (from GIS). Verifies issuer and optional audience.
-app.post("/api/auth/google", async (req, res) => {
+// ---------- Google sign-in ----------
+// Accepts Google credential JWT (from GIS) and verifies signature + issuer (+ audience when configured).
+app.post("/api/auth/google", authGoogleRateLimit, async (req, res) => {
   try {
-    const cred = (req.body && req.body.credential) || "";
+    const cred = sanitizeString((req.body && req.body.credential) || "");
     if (!cred) return res.status(400).json({ error: "Missing credential" });
-    // decode without verifying signature (demo); basic checks:
-    const parts = String(cred).split(".");
-    if (parts.length < 2) return res.status(400).json({ error: "Invalid credential" });
-    function b64uToStr(s){ return Buffer.from(s.replace(/-/g,'+').replace(/_/g,'/'), 'base64').toString('utf8'); }
-    let payload;
-    try { payload = JSON.parse(b64uToStr(parts[1])); } catch (_) { return res.status(400).json({ error: "Bad payload" }); }
-    const iss = String(payload.iss || "");
-    if (!iss.includes("accounts.google.com")) return res.status(400).json({ error: "Invalid issuer" });
-    const allowAny = /^true$/i.test(String(process.env.ALLOW_ANY_GOOGLE_AUD || "")) || process.env.NODE_ENV !== "production";
-    const allowedAudiences = String(process.env.GOOGLE_CLIENT_IDS || process.env.GOOGLE_CLIENT_ID || "")
-      .split(/[,\s]+/)
-      .map((v) => v.trim())
-      .filter(Boolean);
-    const tokenAud = String(payload.aud || "");
-    if (allowedAudiences.length && !allowAny && !allowedAudiences.includes(tokenAud)) {
-      return res.status(400).json({ error: "Invalid audience", expected: allowedAudiences, got: tokenAud });
+
+    if (!GOOGLE_AUDIENCES.length && process.env.NODE_ENV === "production") {
+      return res.status(500).json({ error: "GOOGLE_CLIENT_ID not configured" });
     }
 
-    const email = String(payload.email || "").trim().toLowerCase();
-    const name = String(payload.name || "").trim() || "";
+    const verifyOptions = { idToken: cred };
+    if (GOOGLE_AUDIENCES.length) {
+      verifyOptions.audience = GOOGLE_AUDIENCES;
+    }
+    const ticket = await GOOGLE_ID_CLIENT.verifyIdToken(verifyOptions);
+    const payload = ticket.getPayload() || {};
+    const issuer = String(payload.iss || "");
+    if (issuer !== "accounts.google.com" && issuer !== "https://accounts.google.com") {
+      return res.status(400).json({ error: "Invalid issuer" });
+    }
+    if (payload.email_verified !== true) {
+      return res.status(400).json({ error: "Google email is not verified" });
+    }
+
+    const email = sanitizeEmail(payload.email || "");
+    const name = sanitizeString(payload.name || payload.given_name || "");
     if (!email) return res.status(400).json({ error: "No email in credential" });
 
     // find or create user
@@ -1553,9 +2320,14 @@ app.post("/api/auth/google", async (req, res) => {
       );
       userRow = { id: result.lastID, email, role: "user", name };
     }
-    return res.json({ token: signToken(userRow) });
+    const { accessToken } = await issueSession(res, userRow);
+    return res.json({ token: accessToken });
   } catch (err) {
     console.error("Google auth failed:", err);
+    const detail = String(err && err.message ? err.message : "");
+    if (/token|audience|issuer|expired|invalid|malformed|jwt/i.test(detail)) {
+      return res.status(401).json({ error: "Invalid Google credential" });
+    }
     res.status(500).json({ error: "Google auth failed" });
   }
 });

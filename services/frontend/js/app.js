@@ -3,29 +3,47 @@ const BANNERS = [
   {
     title: "Premium subscriptions in Nepal",
     sub: "Netflix, Canva, ChatGPT, and more",
-    link: "category.html?c=subscriptions"
+    link: "category.html?c=subscriptions",
+    badge: "Nepal ready",
+    metric: "10K+",
+    metricLabel: "Digital deliveries"
   },
   {
     title: "WordPress plugins and SEO tools",
     sub: "Speed, security, and conversion upgrades",
-    link: "category.html?c=wp-plugins"
+    link: "category.html?c=wp-plugins",
+    badge: "WP builders",
+    metric: "120+",
+    metricLabel: "Premium plugins"
   },
   {
     title: "Modern WordPress themes",
     sub: "Blog, news, and store-ready templates",
-    link: "category.html?c=wp-themes"
+    link: "category.html?c=wp-themes",
+    badge: "Design ready",
+    metric: "85+",
+    metricLabel: "Themes curated"
   },
   {
     title: "Netflix plans and profiles",
     sub: "Affordable access with instant activation",
-    link: "category.html?c=netflix"
+    link: "category.html?c=netflix",
+    badge: "Streaming",
+    metric: "5 min",
+    metricLabel: "Activation time"
   },
   {
     title: "Web development packages",
     sub: "Custom builds for businesses",
-    link: "category.html?c=web-development"
+    link: "category.html?c=web-development",
+    badge: "Custom desks",
+    metric: "40+",
+    metricLabel: "Dev partners"
   }
 ];
+let sliderBanners = BANNERS.slice();
+const HERO_BANNER_CACHE_KEY = "SPK_HERO_BANNER_CACHE_V2";
+const HERO_BANNER_CACHE_TTL = 1000 * 60 * 60 * 6;
 
 // --- Checkout config (replace with your real details) ---
 // WhatsApp number must include country code, no + or spaces. Example Nepal: 97798XXXXXXXX
@@ -88,13 +106,28 @@ const DEFAULT_CATEGORIES = [
   { id:"spotify", name:"Spotify", tag:"Premium plans & top-ups", icon:"SP" },
   { id:"social", name:"Social Media Boost", tag:"Coins, credits & boosts", icon:"SM" },
   { id:"gears", name:"Gaming Gears", tag:"Mice, headsets, keyboards", icon:"GG" },
-  { id:"netflix", name:"Netflix", tag:"Plans and profiles", icon:"NF" },
   { id:"wp-plugins", name:"WP Plugins", tag:"SEO, cache, security tools", icon:"PL" },
   { id:"wp-themes", name:"WP Themes", tag:"Blog, news, and shop themes", icon:"TH" },
   { id:"ecommerce", name:"eCommerce", tag:"WooCommerce-ready package", icon:"EC" },
   { id:"vpn", name:"VPN", tag:"Secure browsing plans", icon:"VPN" },
   { id:"web-development", name:"Web Development", tag:"Custom website builds", icon:"WEB" }
 ];
+
+const CATEGORY_LINKS = {
+  "freefire": "collections/freefire.html",
+  "pubg": "collections/pubg.html",
+  "gift": "collections/giftcards.html",
+  "subscriptions": "collections/subscriptions.html",
+  "spotify": "collections/spotify.html",
+  "social": "collections/social.html",
+  "gears": "collections/gaming.html",
+  "netflix": "collections/netflix.html",
+  "wp-plugins": "collections/wp-plugins.html",
+  "wp-themes": "collections/wp-themes.html",
+  "ecommerce": "collections/ecommerce.html",
+  "vpn": "collections/vpn.html",
+  "web-development": "collections/webdev.html"
+};
 
 const DEFAULT_PRODUCTS = [
   {
@@ -154,6 +187,14 @@ const DEFAULT_PRODUCTS = [
     note: "Global/US · Instant code"
   },
   {
+    id: "sample-netflix-nepal",
+    name: "Netflix Premium - Nepal",
+    category: "netflix",
+    price: 1499,
+    img: "https://images.unsplash.com/photo-1515170617208-5648d2fe5a4a?auto=format&fit=crop&w=900&q=80",
+    note: "Nepal region · instant activation"
+  },
+  {
     id: "popular-tiktok-coins",
     name: "TikTok Coins 350",
     category: "social",
@@ -173,6 +214,33 @@ const SAMPLE_TOOLS = [
   { id: "sample-wprocket", name: "WP Rocket 3.20", category: "wp-plugins", price: 299, img: "https://store.ilovemithila.com/wp-content/uploads/2025/05/wp-rocket-nasil-kurulur.jpg.webp", note: "Cache + SEO" },
   { id: "sample-divi", name: "Divi 5.0 Theme", category: "wp-themes", price: 359, img: "https://store.ilovemithila.com/wp-content/uploads/2025/05/divi-review-688x347-1.jpg", note: "Drag & drop builder" },
   { id: "sample-elementor", name: "Elementor Pro", category: "wp-plugins", price: 299, img: "https://store.ilovemithila.com/wp-content/uploads/2025/05/Elementor_Pro_Package_cleanup.png", note: "Visual page builder" }
+];
+
+const COLLECTION_SAMPLE_FALLBACK = [
+  {
+    id: "sample-ecommerce-kit",
+    name: "Ecommerce Starter Kit",
+    category: "ecommerce",
+    price: 2499,
+    img: "https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=900&q=80",
+    note: "WooCommerce-ready storefront + branding"
+  },
+  {
+    id: "sample-vpn-plan",
+    name: "Secure VPN - 6 Months",
+    category: "vpn",
+    price: 1799,
+    img: "https://images.unsplash.com/photo-1525182008055-f88b95ff7980?auto=format&fit=crop&w=900&q=80",
+    note: "High-speed servers · No logs"
+  },
+  {
+    id: "sample-web-dev-support",
+    name: "Web Dev Support Pack",
+    category: "web-development",
+    price: 4999,
+    img: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=900&q=80",
+    note: "Landing page + CMS setup"
+  }
 ];
 
 const LOCALES = {
@@ -209,14 +277,50 @@ const LOCALES = {
     langLabel: "भाषा"
   }
 };
+const SHATTER_FRAGMENT_CONFIG = [
+  { clip: "inset(0 0 66% 0)", offsetX: -26, offsetY: -12, rotate: -10, scale: 0.98, delay: 0 },
+  { clip: "inset(28% 0 42% 0)", offsetX: 24, offsetY: -6, rotate: 8, scale: 1, delay: 0.16 },
+  { clip: "inset(52% 0 26% 0)", offsetX: -20, offsetY: 8, rotate: -6, scale: 0.97, delay: 0.32 },
+  { clip: "inset(74% 0 0 0)", offsetX: 18, offsetY: 12, rotate: 6, scale: 0.95, delay: 0.48 }
+];
+LOCALES.np = LOCALES.ne;
 let currentLocale = localStorage.getItem("softup-locale") || "en";
 let demoOrderStatus = null;
+let bilingualTextManager;
+let languageSelector;
+
+class BilingualTextManager {
+  constructor(root = document) {
+    this.root = root;
+    this.nodes = [];
+    this.refresh();
+  }
+
+  refresh() {
+    this.nodes = Array.from(this.root.querySelectorAll("[data-en][data-np]"));
+  }
+
+  update(lang = "en") {
+    const key = lang === "np" ? "np" : "en";
+    this.nodes.forEach((node) => {
+      const value = node.getAttribute(`data-${key}`);
+      if (value !== null) {
+        if (node.hasAttribute("data-shatter-text")) {
+          renderShatterText(node, value);
+        } else {
+          node.textContent = value;
+        }
+      }
+    });
+  }
+}
 
 function t(key, fallback) {
   return (LOCALES[currentLocale] && LOCALES[currentLocale][key]) || LOCALES.en[key] || fallback || "";
 }
 
 function setLocale(locale) {
+  if (locale === "np") locale = "ne";
   if (!LOCALES[locale]) locale = "en";
   currentLocale = locale;
   localStorage.setItem("softup-locale", locale);
@@ -225,10 +329,79 @@ function setLocale(locale) {
     const key = el.getAttribute("data-locale-text");
     if (key) el.textContent = t(key, el.textContent);
   });
-  document.querySelectorAll("[data-lang-switch] button").forEach((btn) => {
-    btn.classList.toggle("active", btn.getAttribute("data-lang") === locale);
-  });
+  const bilingualLang = locale === "ne" ? "np" : "en";
+  bilingualTextManager?.update(bilingualLang);
+  languageSelector?.highlight?.(bilingualLang);
   refreshHomeSections();
+}
+
+class LanguageSelector {
+  constructor(options = {}) {
+    this.containerSelector = options.containerSelector || "[data-lang-toggle]";
+    this.buttonSelector = options.buttonSelector || "button[data-lang-btn]";
+    this.buttons = [];
+  }
+
+  init() {
+    const container = document.querySelector(this.containerSelector);
+    if (!container) return;
+    this.buttons = Array.from(container.querySelectorAll(this.buttonSelector));
+    this.buttons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const langKey = btn.getAttribute("data-lang-btn") || "en";
+        setLocale(this.localeFromLang(langKey));
+      });
+    });
+  }
+
+  highlight(langKey) {
+    if (!this.buttons.length) return;
+    const target = langKey === "np" ? "np" : "en";
+    this.buttons.forEach((btn) => {
+      btn.classList.toggle("active", btn.getAttribute("data-lang-btn") === target);
+    });
+  }
+
+  localeFromLang(langKey) {
+    return langKey === "np" ? "ne" : "en";
+  }
+}
+
+function renderShatterText(node, value) {
+  if (!node) return;
+  const text = String(value ?? "");
+  node.setAttribute("aria-label", text);
+  node.classList.add("shatter-text");
+  const fragments = node.querySelector(".shatter-text__fragments");
+  const measure = node.querySelector(".shatter-text__measure");
+  if (fragments && measure) {
+    measure.textContent = text;
+    fragments.querySelectorAll(".shatter-text__layer").forEach((layer) => {
+      layer.textContent = text;
+    });
+    return;
+  }
+  node.innerHTML = "";
+  const measureSpan = document.createElement("span");
+  measureSpan.className = "shatter-text__measure";
+  measureSpan.textContent = text;
+  const wrapper = document.createElement("span");
+  wrapper.className = "shatter-text__fragments";
+  wrapper.setAttribute("aria-hidden", "true");
+  SHATTER_FRAGMENT_CONFIG.forEach((fragment) => {
+    const layer = document.createElement("span");
+    layer.className = "shatter-text__layer";
+    layer.textContent = text;
+    layer.style.setProperty("--shatter-clip", fragment.clip);
+    layer.style.setProperty("--shatter-delay", `${fragment.delay}s`);
+    layer.style.setProperty("--shatter-ox", `${fragment.offsetX}px`);
+    layer.style.setProperty("--shatter-oy", `${fragment.offsetY}px`);
+    layer.style.setProperty("--shatter-rot", `${fragment.rotate}deg`);
+    layer.style.setProperty("--shatter-scale", fragment.scale);
+    wrapper.appendChild(layer);
+  });
+  node.appendChild(measureSpan);
+  node.appendChild(wrapper);
 }
 
 function formatUSD(value) {
@@ -324,6 +497,8 @@ function decodeHtmlEntities(value){
        .replace(/\u201D/g, "\"");
   return s;
 }
+
+/* 3D interactions removed per user request */
 
 function isAscii(value){
   return /^[\x20-\x7E]*$/.test(String(value || ""));
@@ -552,20 +727,240 @@ function ensureVisible(root=document){
 function renderCategories(){
   const root = document.querySelector("[data-categories]");
   if(!root) return;
-  root.innerHTML = categories.map(c => `
-    <a class="card" href="category.html?c=${encodeURIComponent(c.id)}" aria-label="${c.name}">
-      <div class="pad">
-        <div style="display:flex;align-items:center;gap:10px">
-          <div style="width:36px;height:36px;border-radius:14px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);font-size:18px">${c.icon}</div>
-          <div>
-            <p class="cardTitle">${c.name}</p>
-            <p class="cardMeta">${c.tag}</p>
+
+  root.innerHTML = categories.map((c, idx) => {
+    const target = CATEGORY_LINKS[c.id] || `category.html?c=${encodeURIComponent(c.id)}`;
+    return `
+    <div class="collection-card" data-category="${c.id}" aria-label="${c.name}" style="--spiral-index:${idx}">
+      <a class="collection-card__link collection-link" href="${target}" data-category="${c.id}" aria-label="${c.name}"></a>
+      <div class="card">
+        <div class="card-glow"></div>
+        <div class="card-content">
+          <div class="pad">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:36px;height:36px;border-radius:14px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);font-size:18px">${c.icon}</div>
+              <div>
+                <p class="cardTitle">${c.name}</p>
+                <p class="cardMeta">${c.tag}</p>
+              </div>
+            </div>
           </div>
         </div>
+        <button type="button" class="collection-card__preview" data-inline-toggle aria-label="Preview ${c.name} samples"><span aria-hidden="true">👁️</span><span>Preview</span></button>
       </div>
-    </a>
-  `).join("");
+    </div>
+    `;
+  }).join("");
   ensureVisible(root);
+  if(typeof initCardPhysics === 'function') initCardPhysics();
+  // initialize product sections after rendering
+  if(typeof renderProductSections === 'function') renderProductSections();
+  // attach inline sample toggles for grid / non-swiper layouts
+  if(typeof attachInlineSamples === 'function') attachInlineSamples();
+  wireCategoryCardNavigation();
+}
+
+// Attach click handlers to show inline sample products under each collection card
+function attachInlineSamples(){
+  const root = document.querySelector('[data-categories]');
+  if(!root) return;
+  root.querySelectorAll('[data-inline-toggle]').forEach(button => {
+    button.removeEventListener('click', button._inlineHandler);
+    const handler = function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      const card = button.closest('.collection-card');
+      const cat = card?.getAttribute('data-category');
+      if(!card || !cat) return;
+      toggleInlineSamples(card, cat);
+    };
+    button.addEventListener('click', handler);
+    button._inlineHandler = handler;
+  });
+}
+
+function wireCategoryCardNavigation(){
+  const root = document.querySelector('[data-categories]');
+  if(!root) return;
+  if(root._navHandler){
+    root.removeEventListener('click', root._navHandler);
+  }
+  const handler = (event) => {
+    if(event.target.closest && event.target.closest('[data-inline-toggle]')) return;
+    const card = event.target.closest && event.target.closest('.collection-card');
+    if(!card) return;
+    const category = card.getAttribute('data-category');
+    if(!category) return;
+    event.preventDefault();
+    loadProducts(category);
+  };
+  root.addEventListener('click', handler);
+  root._navHandler = handler;
+}
+
+function toggleInlineSamples(card, category){
+  // If a sample container already exists for this card, remove it
+  const existing = card.parentElement.querySelector('.inline-samples[data-cat="'+category+'"]');
+  if(existing){
+    existing.remove();
+    return;
+  }
+  // remove any other inline samples on the page
+  document.querySelectorAll('.inline-samples').forEach(el => el.remove());
+
+  const container = document.createElement('div');
+  container.className = 'inline-samples';
+  container.setAttribute('data-cat', category);
+  // build a single sample product entry
+  const items = products.filter(p => p.category === category).slice(0,1);
+  if(items.length === 0){
+    container.innerHTML = `<div class="card"><div class="pad"><p class="cardTitle">No sample products</p><p class="cardMeta">No items available for this collection yet.</p></div></div>`;
+  } else {
+    // header with "View all" link plus samples grid
+    const header = document.createElement('div');
+    header.className = 'sectionHeader inline-samples-header';
+    header.innerHTML = `
+      <div>
+        <h3>${card.getAttribute('aria-label') || category}</h3>
+        <p class="cardMeta">Sample products</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <a class="btn" href="category.html?c=${encodeURIComponent(category)}">View all</a>
+        <button class="inline-close btn icon" aria-label="Close inline samples">×</button>
+      </div>
+    `;
+    container.appendChild(header);
+    const grid = document.createElement('div');
+    grid.className = 'inline-samples-grid';
+    grid.innerHTML = items.map(productCard).join('');
+    container.appendChild(grid);
+    // wire add buttons inside the container
+    setTimeout(() => wireAddButtons(container), 20);
+    // wire close button
+    setTimeout(() => {
+      const closeBtn = container.querySelector('.inline-close');
+      if(closeBtn){
+        closeBtn.addEventListener('click', (ev) => { ev.preventDefault(); ev.stopPropagation(); container.classList.remove('show'); setTimeout(()=>container.remove(), 220); });
+      }
+    }, 30);
+  }
+
+  // insert after the card's slide/column
+  // card might be inside a .swiper-slide or direct grid cell
+  const insertAfter = card.closest('.swiper-slide') || card;
+  if(insertAfter){
+    insertAfter.insertAdjacentElement('afterend', container);
+    // animate open
+    setTimeout(() => container.classList.add('show'), 10);
+    // scroll into view slightly below the card
+    container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+// Initialize Swiper for collections, wire click behavior
+function initSwiperCollections(){
+  // Responsive mode: show as grid on wide screens, use Swiper on small screens
+  const swiperEl = document.querySelector('.collections-swiper');
+  if(!swiperEl) return;
+  const shouldUseSwiper = window.innerWidth <= 900; // breakpoint
+
+  // destroy existing swiper if present
+  try{ if(window._collectionsSwiper){ window._collectionsSwiper.destroy(true, true); window._collectionsSwiper = null; } }catch(_){ }
+
+  if(!shouldUseSwiper){
+    // grid mode: add class to use CSS grid layout and skip Swiper init
+    swiperEl.classList.add('grid-mode');
+    // ensure pagination hidden when in grid-mode
+    const pag = swiperEl.querySelector('.swiper-pagination'); if(pag) pag.style.display = 'none';
+    // attach click handlers to slides (they are collection cards)
+    swiperEl.querySelectorAll('.swiper-slide').forEach(slide => {
+      slide.addEventListener('click', (e) => {
+        // toggle inline samples (handled by attachInlineSamples via card click)
+        // stop any autoplay if exists
+        try{ window._collectionsSwiper && window._collectionsSwiper.autoplay && window._collectionsSwiper.autoplay.stop(); }catch(_){ }
+      });
+    });
+    return;
+  }
+
+  // swiper mode
+  swiperEl.classList.remove('grid-mode');
+  if(swiperEl.querySelector('.swiper-pagination')) swiperEl.querySelector('.swiper-pagination').style.display = '';
+  if(typeof Swiper === 'undefined') return;
+  const swiper = new Swiper(swiperEl, {
+    effect: 'coverflow',
+    grabCursor: true,
+    centeredSlides: true,
+    slidesPerView: 'auto',
+    loop: true,
+    autoplay: { delay: 2500, disableOnInteraction: false },
+    coverflowEffect: { rotate: 40, stretch: 0, depth: 160, modifier: 1, slideShadows: true },
+    pagination: { el: swiperEl.querySelector('.swiper-pagination'), clickable: true }
+  });
+  window._collectionsSwiper = swiper;
+
+  // clicking a slide: stop autoplay, show matching product section and smooth scroll
+  swiperEl.querySelectorAll('.swiper-slide').forEach(slide => {
+    slide.addEventListener('click', (e) => {
+      try{ swiper.autoplay.stop(); }catch(_){ }
+      const target = slide.dataset.target || (slide.querySelector && slide.querySelector('a.collection-link') && slide.querySelector('a.collection-link').dataset ? slide.querySelector('a.collection-link').dataset.category : undefined);
+      const anchor = e.target.closest && e.target.closest('a.collection-link');
+      if(target && !anchor){
+        document.querySelectorAll('.product-section').forEach(s=>s.classList.remove('active'));
+        const sec = document.getElementById(target);
+        if(sec){ sec.classList.add('active'); sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      } else if(target && anchor){
+        const sec = document.getElementById(target);
+        if(sec){ sec.classList.add('active'); }
+      }
+    });
+  });
+
+  // re-evaluate on resize
+  if(!window._collectionsResizeHandler){
+    window._collectionsResizeHandler = () => {
+      // small debounce
+      clearTimeout(window._collectionsResizeTimeout);
+      window._collectionsResizeTimeout = setTimeout(() => initSwiperCollections(), 180);
+    };
+    window.addEventListener('resize', window._collectionsResizeHandler);
+  }
+}
+
+// Render hidden product-section containers for each category
+function renderProductSections(){
+  const container = document.getElementById('collection-product-sections');
+  if(!container) return;
+  container.innerHTML = categories.map(c => {
+    return `
+      <div id="${c.id}" class="product-section">
+        <div class="sectionHeader">
+          <div>
+            <h2>${c.name}</h2>
+            <p>${c.tag}</p>
+          </div>
+          <a class="btn" href="category.html?c=${encodeURIComponent(c.id)}">View all</a>
+        </div>
+        <div class="grid products-grid" data-products-for="${c.id}"></div>
+      </div>
+    `;
+  }).join('');
+  // populate products for each section using available products array
+  categories.forEach(cat => {
+    const grid = document.querySelector(`[data-products-for="${cat.id}"]`);
+    if(!grid) return;
+    const items = products.filter(p => p.category === cat.id).slice(0,6);
+    if(items.length){ grid.innerHTML = items.map(productCard).join(''); wireAddButtons(grid); }
+    else { grid.innerHTML = `<div class="card"><div class="pad"><p class="cardTitle">No products</p><p class="cardMeta">No items available for ${cat.name}.</p></div></div>`; }
+  });
+}
+
+// helper used by collection-card click handler
+function loadProducts(category){
+  // this can be overridden by other code; default navigates to category page
+  if(!category) return;
+  const target = CATEGORY_LINKS[category] || `category.html?c=${encodeURIComponent(category)}`;
+  window.location.href = target;
 }
 
 function productCard(p){
@@ -612,6 +1007,8 @@ function registerSampleProducts(items = []){
     }
   });
 }
+
+registerSampleProducts([...SAMPLE_SUBSCRIPTIONS, ...SAMPLE_TOOLS, ...COLLECTION_SAMPLE_FALLBACK]);
 
 const CURATED_CONFIG = [
   {
@@ -693,11 +1090,23 @@ function renderCategoryPage(){
   const header = document.querySelector("[data-category-title]");
   if(header) header.textContent = cat ? cat.name : "Category";
   const filtered = products.filter(p => p.category === id);
-  root.innerHTML = filtered.length ? filtered.map(productCard).join("") : `
-    <div class="card"><div class="pad">
-      <p class="cardTitle">No items yet</p>
-      <p class="cardMeta">Add your real products later in <span class="small">js/app.js</span>.</p>
-    </div></div>`;
+  const fallbackSample = {
+    id: "sample-category-placeholder",
+    name: "Sample Netflix Premium",
+    category: "netflix",
+    price: 1599,
+    img: "https://images.unsplash.com/photo-1505685296765-3a2736de412f?auto=format&fit=crop&w=900&q=80",
+    note: "Nepal ready • Instant delivery"
+  };
+  root.innerHTML = filtered.length
+    ? filtered.map(productCard).join("")
+    : id === "netflix"
+      ? productCard(fallbackSample)
+      : `
+        <div class="card"><div class="pad">
+          <p class="cardTitle">No items yet</p>
+          <p class="cardMeta">Add your real products later in <span class="small">js/app.js</span>.</p>
+        </div></div>`;
   wireAddButtons(root);
   ensureVisible(root);
 }
@@ -1241,14 +1650,28 @@ function wirePayModal(){
   backdrop.querySelectorAll("[data-pay-close]").forEach(b => b.addEventListener("click", closePayModal));
 }
 
+async function fetchWithTimeout(url, options, timeoutMs){
+  if (typeof AbortController === "undefined") {
+    return fetch(url, options || {});
+  }
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs || 1800);
+  try {
+    const reqOptions = Object.assign({}, options || {}, { signal: controller.signal });
+    return await fetch(url, reqOptions);
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
 
 
 async function loadCatalogFromApi(){
   let didLoadProducts = false;
   try{
     const [catsRes, prodsRes] = await Promise.all([
-      fetch(`${API_BASE}/api/categories`),
-      fetch(`${API_BASE}/api/products?limit=500&offset=0&sort=name_asc`)
+      fetchWithTimeout(`${API_BASE}/api/categories`, {}, 1600),
+      fetchWithTimeout(`${API_BASE}/api/products?limit=500&offset=0&sort=name_asc`, {}, 1800)
     ]);
 
     if (catsRes.ok){
@@ -1274,8 +1697,8 @@ async function loadCatalogFromApi(){
   async function loadCatalogFromIlmStore(){
     async function tryBase(base){
       const [catsRes, prodsRes] = await Promise.all([
-        fetch(`${base}/products/categories?per_page=100`),
-        fetch(`${base}/products?per_page=100&_fields=id,name,prices,images,categories`)
+        fetchWithTimeout(`${base}/products/categories?per_page=100`, {}, 2000),
+        fetchWithTimeout(`${base}/products?per_page=100&_fields=id,name,prices,images,categories`, {}, 2200)
       ]);
       if (!catsRes.ok || !prodsRes.ok) return null;
       const rawCats = await catsRes.json();
@@ -1345,45 +1768,70 @@ async function loadCatalogFromApi(){
 }
 
 async function init(){
-  renderCategories();
-  refreshHomeSections();
-  await loadPublicSettings();
-  const loaded = await loadCatalogFromApi();
-  if(!loaded){
-    await loadCatalogFromIlmStore();
-  }
-  if(!Array.isArray(categories) || !categories.length){
-    categories = DEFAULT_CATEGORIES.slice();
-  }
-  if(!Array.isArray(products) || !products.length){
-    products = DEFAULT_PRODUCTS.slice();
-  }
-  await loadTestimonials();
-  await loadAndRenderBlog();
-  updateCartCount();
-  renderCategories();
-  refreshHomeSections();
+  const scheduleIdleTask = (runner, timeout = 1400) =>
+    new Promise((resolve) => {
+      const execute = () => {
+        Promise.resolve()
+          .then(() => (typeof runner === "function" ? runner() : null))
+          .then(resolve)
+          .catch(() => resolve(null));
+      };
+      if (typeof window !== "undefined" && typeof window.requestIdleCallback === "function") {
+        window.requestIdleCallback(execute, { timeout });
+      } else {
+        window.setTimeout(execute, 420);
+      }
+    });
+  const renderPillsNav = () => {
+    const pills = document.querySelector("[data-pills]");
+    if(!pills) return;
+    pills.innerHTML = categories.map(c => `<a class="pill" href="category.html?c=${encodeURIComponent(c.id)}">${c.name}</a>`).join("");
+  };
+  const refreshCatalogUi = () => {
+    if(!Array.isArray(categories) || !categories.length){
+      categories = DEFAULT_CATEGORIES.slice();
+    }
+    if(!Array.isArray(products) || !products.length){
+      products = DEFAULT_PRODUCTS.slice();
+    }
+    updateCartCount();
+    renderCategories();
+    refreshHomeSections();
+    renderPillsNav();
+  };
+  bilingualTextManager = new BilingualTextManager();
+  languageSelector = new LanguageSelector();
+  languageSelector.init();
+  const heroTask = prepareHeroSlider().catch(() => {});
+  refreshCatalogUi();
+  const settingsTask = loadPublicSettings().catch(() => {});
+  const testimonialsTask = scheduleIdleTask(() => loadTestimonials().catch(() => {}), 1800);
+  const blogTask = scheduleIdleTask(() => loadAndRenderBlog().catch(() => {}), 2200);
+  const catalogTask = loadCatalogFromApi()
+    .then((loaded) => {
+      if (loaded) {
+        refreshCatalogUi();
+        return true;
+      }
+      return loadCatalogFromIlmStore()
+        .then((ok) => {
+          if (ok) refreshCatalogUi();
+          return ok;
+        })
+        .catch(() => false);
+    })
+    .catch(() => false);
+
   buildCartModal();
   wirePayModal();
   wireCartButtons();
   wireSearch();
-
-  // pills dynamic
-  const pills = document.querySelector("[data-pills]");
-  if(pills){
-    pills.innerHTML = categories.map(c => `<a class="pill" href="category.html?c=${encodeURIComponent(c.id)}">${c.name}</a>`).join("");
-  }
+  void Promise.allSettled([settingsTask, testimonialsTask, blogTask, heroTask, catalogTask]);
 
   // hero CTA
   document.querySelectorAll("[data-go-popular]").forEach(b => b.addEventListener("click", () => {
     document.querySelector("#popular")?.scrollIntoView({behavior:"smooth"});
   }));
-  document.querySelectorAll("[data-lang-switch] button").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const lang = btn.getAttribute("data-lang") || "en";
-      setLocale(lang);
-    });
-  });
   setLocale(currentLocale);
 }
 
@@ -1391,43 +1839,426 @@ document.addEventListener("DOMContentLoaded", init);
 
 
 /* === HERO SLIDER (Clickable + Text) === */
-(function(){
-  const slider=document.querySelector("[data-hero-slider]");
-  if(!slider) return;
+async function loadSliderBanners() {
+  const cacheKey = HERO_BANNER_CACHE_KEY;
+  const persistCache = (rows) => {
+    sliderBanners = rows;
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), rows }));
+    } catch (_) {
+      /* ignore */
+    }
+  };
+  const tryUseCache = () => {
+    if (!cacheKey) return false;
+    try {
+      const raw = localStorage.getItem(cacheKey);
+      if (!raw) return false;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed.rows) && parsed.rows.length) {
+        sliderBanners = parsed.rows;
+        return true;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  };
+  const fetchFromApi = async (timeoutMs = 1200) => {
+    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timer = controller ? window.setTimeout(() => controller.abort(), timeoutMs) : 0;
+    try {
+      const base = API_BASE || "";
+      const endpoint = base ? `${base}/api/public/slider-banners` : "/api/public/slider-banners";
+      const res = await fetch(endpoint, {
+        cache: "no-cache",
+        signal: controller ? controller.signal : undefined,
+      });
+      if (!res.ok) throw new Error(`Slider fetch failed ${res.status}`);
+      const rows = await res.json();
+      if (Array.isArray(rows) && rows.length) return rows;
+      return null;
+    } finally {
+      if (timer) window.clearTimeout(timer);
+    }
+  };
 
-  const track=slider.querySelector(".heroSliderTrack");
-  const slides=[...track.children];
-  const dots=slider.querySelector(".heroDots");
-  const title=document.querySelector("[data-banner-title]");
-  const sub=document.querySelector("[data-banner-sub]");
-  let i=0;
+  if (tryUseCache()) {
+    void fetchFromApi(2200)
+      .then((rows) => {
+        if (rows && rows.length) persistCache(rows);
+      })
+      .catch(() => {
+        /* ignore background refresh errors */
+      });
+    return;
+  }
 
-  slides.forEach((slide,idx)=>{
-    slide.style.cursor="pointer";
-    slide.onclick=()=>location.href=BANNERS[idx]?.link || "#";
-    const d=document.createElement("div");
-    d.className="heroDot"+(idx===0?" active":"");
-    d.onclick=(e)=>{ e.stopPropagation(); go(idx); };
-    dots.appendChild(d);
+  // why: avoid blocking initial render while remote API wakes up/cold starts.
+  sliderBanners = BANNERS.slice();
+  void fetchFromApi(2200)
+    .then((rows) => {
+      if (rows && rows.length) persistCache(rows);
+    })
+    .catch(() => {
+      /* keep defaults */
+    });
+}
+
+function buildHeroSlideMarkup(banner, index) {
+  const title = escapeHtml(banner.title || "Digital Delivery");
+  const subtitle = escapeHtml(banner.subtitle || banner.sub || "");
+  const rawImage = String(banner.image || `assets/banners/banner-${(index % 5) + 1}.webp`)
+    .replace(/assets\/banners\/banner-(\d+)\.png$/i, "assets/banners/banner-$1.webp");
+  const image = escapeHtml(rawImage);
+  const badge = banner.badge ? `<p class="heroBadge">${escapeHtml(banner.badge)}</p>` : "";
+  const metricValue = banner.metric ? escapeHtml(banner.metric) : "";
+  const metricLabel = banner.metricLabel ? escapeHtml(banner.metricLabel) : "";
+  const spotlight =
+    metricValue || metricLabel
+      ? `<div class="heroSpotlight">${metricValue ? `<strong>${metricValue}</strong>` : ""}${metricLabel ? `<span>${metricLabel}</span>` : ""}</div>`
+      : "";
+  const fallbackLink = banner.link ? escapeHtml(banner.link) : "product.html";
+  const cta = `<a class="btn primary" href="${fallbackLink}">Shop now</a>`;
+  return `
+    <div class="heroSlide">
+      <div class="heroSlideTiles" data-hero-tiles data-image="${image}"></div>
+      <div class="heroOverlay">
+        <div class="heroText">
+          ${badge}
+          <h1>${title}</h1>
+          ${subtitle ? `<p>${subtitle}</p>` : ""}
+          ${spotlight}
+          ${cta}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderHeroSlides() {
+  const slider = document.querySelector("[data-hero-slider]");
+  if (!slider) return false;
+  const track = slider.querySelector(".heroSliderTrack");
+  if (!track) return false;
+  if (!sliderBanners.length) {
+    track.innerHTML = "";
+    slider.style.display = "none";
+    return false;
+  }
+  slider.style.display = "";
+  track.innerHTML = sliderBanners.map(buildHeroSlideMarkup).join("");
+  return true;
+}
+
+function initializeHeroSlider() {
+  const slider = document.querySelector("[data-hero-slider]");
+  if (!slider) return;
+  const track = slider.querySelector(".heroSliderTrack");
+  const slides = track ? Array.from(track.children) : [];
+  const dots = slider.querySelector(".heroDots");
+  if (!track || !slides.length || !dots) return;
+
+  let current = 0;
+  let timer;
+  const AUTO_DELAY = 4800;
+  const lowPowerDevice =
+    (typeof navigator !== "undefined" && Number(navigator.hardwareConcurrency || 0) > 0 && navigator.hardwareConcurrency <= 4) ||
+    (typeof navigator !== "undefined" && Number(navigator.deviceMemory || 0) > 0 && navigator.deviceMemory <= 4);
+  const HERO_TILE_TARGET_PX = lowPowerDevice ? 38 : 24;
+  const HERO_TILE_MAX = lowPowerDevice ? 320 : 760;
+  let tileResizeTimer;
+  let tileAnimationCompleteTimer;
+  let lastSlideExposure = { index: null, timestamp: Date.now() };
+  const MOTION_PREF_KEY = "SPK_HERO_MOTION_REDUCED";
+  const motionMedia = typeof window !== "undefined" && window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+  let motionReduced = (function () {
+    try {
+      const stored = localStorage.getItem(MOTION_PREF_KEY);
+      if (stored !== null) return stored === "1" || stored === "true";
+    } catch (_) {
+      /* ignore */
+    }
+    return motionMedia ? motionMedia.matches : false;
+  })();
+  const motionToggle = slider.querySelector("[data-motion-toggle]");
+
+  const normalizeIndex = (value) => {
+    const total = slides.length;
+    return ((value % total) + total) % total;
+  };
+
+  const reportHeroAnalytics = (eventName, payload = {}) => {
+    const data = { event: eventName, ...payload };
+    try {
+      if (window.dataLayer && Array.isArray(window.dataLayer)) {
+        window.dataLayer.push(data);
+        return;
+      }
+    } catch (_) {}
+    if (window.gtag) {
+      window.gtag("event", eventName, payload);
+    }
+  };
+
+  const trackSlideExposure = (newIndex) => {
+    const pointer = Date.now();
+    if (lastSlideExposure.index !== null && lastSlideExposure.index !== newIndex) {
+      reportHeroAnalytics("hero_slide_duration", {
+        slideIndex: lastSlideExposure.index,
+        banner: sliderBanners[lastSlideExposure.index]?.title || "",
+        durationMs: pointer - lastSlideExposure.timestamp,
+      });
+    }
+    lastSlideExposure = { index: newIndex, timestamp: pointer };
+  };
+
+  const onTileAnimationComplete = (index, bannerTitle, durationMs) => {
+    reportHeroAnalytics("hero_tile_animation_complete", {
+      slideIndex: index,
+      banner: bannerTitle || "",
+      durationMs: Math.max(0, Math.round(durationMs || 0)),
+    });
+  };
+
+  const updateDots = () => {
+    dots.querySelectorAll(".heroDot").forEach((dot, idx) => dot.classList.toggle("active", idx === current));
+  };
+
+  const setMotionReduced = (value) => {
+    motionReduced = !!value;
+    try {
+      localStorage.setItem(MOTION_PREF_KEY, motionReduced ? "1" : "0");
+    } catch (_) {}
+    slider.classList.toggle("heroSlider--reduced-motion", motionReduced);
+    if (motionToggle) {
+      motionToggle.textContent = motionReduced ? "Restore motion" : "Reduce motion";
+      motionToggle.setAttribute("aria-pressed", motionReduced ? "true" : "false");
+    }
+    if (motionControl) {
+      motionControl.dataset.motionReduced = motionReduced ? "1" : "0";
+    }
+  };
+
+  const motionControl = slider.querySelector("[data-motion-control]");
+  if (motionControl) {
+    motionControl.dataset.motionReduced = motionReduced ? "1" : "0";
+  }
+  setMotionReduced(motionReduced);
+
+  if (motionToggle) {
+    motionToggle.addEventListener("click", () => {
+      setMotionReduced(!motionReduced);
+      refreshHeroTiles();
+      scheduleNext();
+    });
+  }
+  if (motionMedia && typeof motionMedia.addEventListener === "function") {
+    motionMedia.addEventListener("change", (event) => {
+      try {
+        const stored = localStorage.getItem(MOTION_PREF_KEY);
+        if (stored === null) {
+          setMotionReduced(event.matches);
+          refreshHeroTiles();
+        }
+      } catch (_) {}
+    });
+  }
+
+  const buildTilesForSlide = (slide, index) => {
+    if (!slide) return 0;
+    const container = slide.querySelector("[data-hero-tiles]");
+    if (!container) return 0;
+    const image = container.dataset.image;
+    if (!image) return 0;
+    const width = container.clientWidth || container.offsetWidth || slider.offsetWidth || 1;
+    const height = container.clientHeight || container.offsetHeight || slider.offsetHeight || 1;
+    let cols = motionReduced ? 1 : Math.max(1, Math.ceil(width / HERO_TILE_TARGET_PX));
+    let rows = motionReduced ? 1 : Math.max(1, Math.ceil(height / HERO_TILE_TARGET_PX));
+    if (!motionReduced) {
+      const total = cols * rows;
+      if (total > HERO_TILE_MAX) {
+        const scale = Math.sqrt(total / HERO_TILE_MAX);
+        cols = Math.max(1, Math.floor(cols / scale));
+        rows = Math.max(1, Math.floor(rows / scale));
+      }
+    }
+    const tileSize = motionReduced ? Math.max(width, height) : Math.max(18, Math.ceil(Math.max(width / cols, height / rows)));
+    const centerCol = (cols - 1) * 0.5;
+    const centerRow = (rows - 1) * 0.5;
+    const tileGap = motionReduced ? 0 : 1.1;
+    container.innerHTML = "";
+    container.style.backgroundImage = `url("${image}")`;
+    container.style.backgroundSize = `${width}px ${height}px`;
+    container.style.backgroundPosition = "0 0";
+    container.style.backgroundRepeat = "no-repeat";
+    const fragment = document.createDocumentFragment();
+    const tiles = [];
+    let maxDelay = 0;
+    for (let row = 0; row < rows; row += 1) {
+      for (let col = 0; col < cols; col += 1) {
+        const left = Math.floor(col * tileSize);
+        const top = Math.floor(row * tileSize);
+        const right = Math.min(width, left + tileSize);
+        const bottom = Math.min(height, top + tileSize);
+        if (left >= width || top >= height) continue;
+        const cellWidth = Math.max(1, right - left + 1);
+        const cellHeight = Math.max(1, bottom - top + 1);
+        const gap = Math.min(tileGap, cellWidth * 0.16, cellHeight * 0.16);
+        const renderLeft = left + gap * 0.5;
+        const renderTop = top + gap * 0.5;
+        const renderWidth = Math.max(1, cellWidth - gap);
+        const renderHeight = Math.max(1, cellHeight - gap);
+        const tile = document.createElement("span");
+        tile.className = "heroTile";
+        if (motionReduced) tile.classList.add("heroTile--static");
+        tile.style.width = `${renderWidth}px`;
+        tile.style.height = `${renderHeight}px`;
+        tile.style.left = `${renderLeft}px`;
+        tile.style.top = `${renderTop}px`;
+        const face = document.createElement("span");
+        face.className = "heroTileFace";
+        face.style.backgroundImage = `url("${image}")`;
+        face.style.backgroundSize = `${width}px ${height}px`;
+        face.style.backgroundPosition = `-${left}px -${top}px`;
+        tile.appendChild(face);
+        const radial = Math.hypot(col - centerCol, row - centerRow);
+        const delay = motionReduced ? 0 : radial * 0.05 + Math.random() * 0.12;
+        const entryX = col <= centerCol ? -1 : 1;
+        const entryY = row <= centerRow ? 1 : -1;
+        const driftX = motionReduced ? 0 : (Math.random() * 3.8 + 2.4) * (Math.random() > 0.5 ? 1 : -1);
+        const driftY = motionReduced ? 0 : (Math.random() * 2.6 + 1.6) * (Math.random() > 0.5 ? 1 : -1);
+        tile.style.setProperty("--tile-entry-x", String(entryX));
+        tile.style.setProperty("--tile-entry-y", String(entryY));
+        tile.style.setProperty("--tile-depth", `${90 + Math.round(radial * 14 + Math.random() * 20)}px`);
+        tile.style.setProperty("--tile-delay", `${delay.toFixed(3)}s`);
+        tile.style.setProperty("--tile-variance", `${(Math.random() * 2 + 0.2).toFixed(2)}s`);
+        tile.style.setProperty("--tile-drift-x", `${driftX.toFixed(2)}px`);
+        tile.style.setProperty("--tile-drift-y", `${driftY.toFixed(2)}px`);
+        tile.style.setProperty("--tile-drift-duration", `${(3.8 + Math.random() * 2.2).toFixed(2)}s`);
+        tile.style.setProperty("--tile-drift-delay", `${(Math.random() * 0.8).toFixed(2)}s`);
+        tile.style.transitionDelay = `${delay.toFixed(3)}s`;
+        fragment.appendChild(tile);
+        tiles.push(tile);
+        if (!motionReduced) {
+          maxDelay = Math.max(maxDelay, delay);
+        }
+      }
+    }
+    container.appendChild(fragment);
+    if (motionReduced) {
+      tiles.forEach((tile) => tile.classList.add("heroTile--visible"));
+    } else {
+      requestAnimationFrame(() => {
+        tiles.forEach((tile) => tile.classList.add("heroTile--visible"));
+      });
+    }
+    return motionReduced ? 0 : maxDelay + 1.0;
+  };
+
+  const refreshHeroTiles = () => {
+    slides.forEach((slide) => slide.classList.remove("heroSlide--cta-visible"));
+    const active = slides[current];
+    if (!active) return;
+    const container = active.querySelector("[data-hero-tiles]");
+    if (!container) return;
+    container.innerHTML = "";
+    clearTimeout(tileAnimationCompleteTimer);
+    const animationSeconds = buildTilesForSlide(active, current);
+    const animationMs = Math.max(80, animationSeconds * 1000);
+    tileAnimationCompleteTimer = window.setTimeout(() => {
+      active.classList.add("heroSlide--cta-visible");
+      onTileAnimationComplete(current, sliderBanners[current]?.title || "", animationMs);
+    }, animationMs + 120);
+  };
+
+  const scheduleTileRefresh = () => {
+    clearTimeout(tileResizeTimer);
+    tileResizeTimer = window.setTimeout(() => refreshHeroTiles(), 200);
+  };
+
+  const updateParallax = (xDeg, yDeg) => {
+    slider.style.setProperty("--hero-parallax-x", `${xDeg}deg`);
+    slider.style.setProperty("--hero-parallax-y", `${yDeg}deg`);
+  };
+
+  const handleParallax = (event) => {
+    if (event.pointerType === "touch" && !event.isPrimary) return;
+    const rect = slider.getBoundingClientRect();
+    const clamp = (value) => Math.max(-1, Math.min(1, value));
+    const offsetX = clamp((event.clientX - (rect.left + rect.width / 2)) / (rect.width / 2));
+    const offsetY = clamp(((event.clientY - (rect.top + rect.height / 2)) / (rect.height / 2)) * -1);
+    const PARALLAX_MAX = 3.5;
+    updateParallax(offsetY * PARALLAX_MAX, offsetX * PARALLAX_MAX);
+    slider.classList.add("heroSlider--parallax-active");
+  };
+
+  const resetParallax = () => {
+    updateParallax(0, 0);
+    slider.classList.remove("heroSlider--parallax-active");
+  };
+
+  const setActiveSlide = (value) => {
+    current = normalizeIndex(value);
+    track.style.transform = `translateX(-${current * 100}%)`;
+    slides.forEach((slide, idx) => {
+      slide.setAttribute("data-active", idx === current ? "1" : "0");
+      if (idx !== current) slide.classList.remove("heroSlide--cta-visible");
+    });
+    updateDots();
+    trackSlideExposure(current);
+    refreshHeroTiles();
+  };
+
+  const scheduleNext = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => setActiveSlide(current + 1), AUTO_DELAY);
+  };
+
+  const pauseSlider = () => clearTimeout(timer);
+
+  dots.innerHTML = "";
+  slides.forEach((slide, idx) => {
+    const hasLink = sliderBanners[idx] && sliderBanners[idx].link;
+    slide.style.cursor = hasLink ? "pointer" : "default";
+    slide.onclick = () => {
+      const href = sliderBanners[idx]?.link;
+      if (href) {
+        location.href = href;
+      }
+    };
+    const dot = document.createElement("div");
+    dot.className = "heroDot";
+    dot.onclick = (event) => {
+      event.stopPropagation();
+      setActiveSlide(idx);
+      scheduleNext();
+    };
+    dots.appendChild(dot);
   });
 
-  function updateText(){
-    if(!BANNERS[i]) return;
-    title.textContent=BANNERS[i].title;
-    sub.textContent=BANNERS[i].sub;
-  }
+  slider.addEventListener("mouseenter", pauseSlider);
+  slider.addEventListener("mouseleave", scheduleNext);
+  slider.addEventListener("pointermove", handleParallax);
+  slider.addEventListener("pointerleave", () => {
+    scheduleNext();
+    resetParallax();
+  });
+  slider.addEventListener("pointercancel", resetParallax);
+  slider.addEventListener("pointerup", resetParallax);
+  window.addEventListener("resize", scheduleTileRefresh);
 
-  function go(n){
-    i=n;
-    track.style.transform=`translateX(${-i*100}%)`;
-    dots.querySelectorAll(".heroDot").forEach((d,di)=>d.classList.toggle("active",di===i));
-    updateText();
-  }
+  setActiveSlide(0);
+  scheduleNext();
+}
 
-  updateText();
-  setInterval(()=>go((i+1)%slides.length),4500);
-})();
-
+async function prepareHeroSlider() {
+  await loadSliderBanners();
+  renderHeroSlides();
+  initializeHeroSlider();
+  try {
+    document.dispatchEvent(new Event("hero:ready"));
+  } catch (_) {}
+}
 
 /* === Feedback Widget === */
 function mountFeedback(){
@@ -1507,8 +2338,223 @@ function mountFeedback(){
   });
 }
 
+const AI_CHAT_FALLBACKS = [
+  "Check out Netflix, Canva, and ChatGPT plans—instant delivery in minutes.",
+  "We offer WhatsApp proof for every purchase. Need help with the order?",
+  "Ask me about WordPress plugins, themes, or delivery timelines."
+];
+
+const AI_CHAT_KNOWLEDGE = [
+  {
+    keywords: ["subscription","plan","netflix","chatgpt","canva"],
+    reply: "Subscriptions include Netflix, Canva, ChatGPT, and local partners. Pick a plan and we’ll deliver the activation code in under 15 minutes with WhatsApp proof."
+  },
+  {
+    keywords: ["delivery","proof","whatsapp","min","minute"],
+    reply: "Delivery is instant once payment is confirmed—most orders send a WhatsApp screenshot with the trackable code so you can verify within 10 minutes."
+  },
+  {
+    keywords: ["payment","payment methods","esewa","upi","card","google pay"],
+    reply: "We accept eSewa, Khalti, IME Pay, mobile banking, and cards. Payments go through encrypted checkout and our team replies with a receipt and WhatsApp confirmation."
+  },
+  {
+    keywords: ["support","help","admin","issue","problem","contact"],
+    reply: "Our 24/7 support replies on WhatsApp at +977-980XXXXX and via the admin panel. Mention your order ID and we handle follow-ups right away."
+  }
+];
+
+const AI_CHAT_QUICK_CHIPS = [
+  "How fast is delivery?",
+  "Show me Netflix plans",
+  "What payments do you accept?",
+  "Need help with a refund"
+];
+
+class AIChatModule {
+  constructor() {
+    this.apiEndpoint = this.buildEndpoint();
+    this.ensureInterface();
+    this.setupElements();
+    this.bindEvents();
+    this.populateChips();
+  }
+
+  buildEndpoint() {
+    const base = (window.API_BASE || "").trim().replace(/\/$/, "");
+    return `${base || "http://localhost:4000"}/api/chat/`;
+  }
+
+  ensureInterface() {
+    if (!document.querySelector("[data-ai-chat-trigger]")) {
+      this.createTrigger();
+    }
+    if (!document.querySelector("[data-ai-chat-overlay]")) {
+      this.createOverlay();
+    }
+  }
+
+  createTrigger() {
+    const floatingSupport = document.querySelector("[data-floating-actions]") || document.body;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "chatFab";
+    btn.setAttribute("data-ai-chat-trigger", "");
+    btn.setAttribute("aria-label", "Open AI chat");
+    btn.innerHTML = `<span aria-hidden="true">🤖</span><span>AI assistant</span>`;
+    floatingSupport.insertBefore(btn, floatingSupport.firstChild);
+  }
+
+  createOverlay() {
+    const overlay = document.createElement("div");
+    overlay.className = "aiChatOverlay";
+    overlay.setAttribute("data-ai-chat-overlay", "");
+    overlay.dataset.open = "0";
+    overlay.innerHTML = `
+      <div class="aiChatCard" role="dialog" aria-label="AI assistant">
+        <div class="aiChatHeader">
+          <h3>AI Assistant</h3>
+          <button class="aiChatClose" type="button" data-ai-chat-close aria-label="Close chat">×</button>
+        </div>
+        <div class="aiChatChips" data-ai-chips></div>
+        <div class="aiChatMessages" data-ai-chat-log>
+          <div class="aiMessage aiMessage--bot">Hi! Ask me about subscriptions, delivery, or how SoftUpakaran works.</div>
+        </div>
+        <div class="aiChatFooter">
+          <input type="text" class="aiChatInput" placeholder="Type your question..." data-ai-message aria-label="Your message"/>
+          <button class="btn primary" type="button" data-ai-send>Send</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+  }
+
+  setupElements() {
+    this.overlay = document.querySelector("[data-ai-chat-overlay]");
+    this.messageContainer = this.overlay?.querySelector("[data-ai-chat-log]");
+    this.messageInput = this.overlay?.querySelector("[data-ai-message]");
+    this.sendButton = this.overlay?.querySelector("[data-ai-send]");
+    this.closeButton = this.overlay?.querySelector("[data-ai-chat-close]");
+    this.chipContainer = this.overlay?.querySelector("[data-ai-chips]");
+    this.triggerButton = document.querySelector("[data-ai-chat-trigger]");
+    this.helpButton = document.querySelector("[data-ai-help-btn]");
+    this.loading = false;
+  }
+
+  bindEvents() {
+    this.triggerButton?.addEventListener("click", () => this.open());
+    this.helpButton?.addEventListener("click", (event) => {
+      event.preventDefault();
+      this.open();
+    });
+    this.closeButton?.addEventListener("click", () => this.close());
+    this.overlay?.addEventListener("click", (event) => {
+      if (event.target === this.overlay) this.close();
+    });
+    this.sendButton?.addEventListener("click", () => this.sendMessage());
+    this.messageInput?.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        this.sendMessage();
+      }
+    });
+  }
+
+  setLoading(isLoading) {
+    this.loading = !!isLoading;
+    if (this.sendButton) this.sendButton.disabled = isLoading;
+    if (this.messageInput) this.messageInput.disabled = isLoading;
+  }
+
+  populateChips() {
+    if (!this.chipContainer) return;
+    this.chipContainer.innerHTML = "";
+    AI_CHAT_QUICK_CHIPS.forEach((label) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.textContent = label;
+      chip.addEventListener("click", () => this.fillSuggestion(label));
+      this.chipContainer.appendChild(chip);
+    });
+  }
+
+  fillSuggestion(text) {
+    if (this.messageInput) this.messageInput.value = text;
+    this.sendMessage();
+  }
+
+  appendMessage(text, type) {
+    if (!this.messageContainer) return null;
+    const msg = document.createElement("div");
+    msg.className = `aiMessage aiMessage--${type}`;
+    msg.textContent = text;
+    this.messageContainer.appendChild(msg);
+    this.messageContainer.scrollTop = this.messageContainer.scrollHeight;
+    return msg;
+  }
+
+  craftFallback(value) {
+    const lower = String(value || "").toLowerCase();
+    const match = AI_CHAT_KNOWLEDGE.find((entry) =>
+      entry.keywords.some((keyword) => lower.includes(keyword))
+    );
+    return match ? match.reply : AI_CHAT_FALLBACKS[Math.floor(Math.random() * AI_CHAT_FALLBACKS.length)];
+  }
+
+  extractReply(payload) {
+    if (!payload) return "";
+    if (typeof payload.reply === "string" && payload.reply.trim()) return payload.reply.trim();
+    return "";
+  }
+
+  async sendMessage() {
+    if (this.loading) return;
+    const prompt = (this.messageInput?.value || "").trim();
+    if (!prompt) return;
+    this.appendMessage(prompt, "user");
+    if (this.messageInput) this.messageInput.value = "";
+    const placeholder = this.appendMessage("Thinking...", "bot");
+    this.setLoading(true);
+    try {
+      const response = await fetch(this.apiEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: prompt })
+      });
+      let payload = null;
+      if (response.ok) {
+        payload = await response.json();
+      } else {
+        const detail = await response.text();
+        console.warn("AI chat backend error:", response.status, detail);
+      }
+      const reply = this.extractReply(payload) || this.craftFallback(prompt);
+      placeholder.textContent = reply;
+    } catch (err) {
+      console.warn("AI chat error:", err);
+      placeholder.textContent = `${this.craftFallback(prompt)} (offline answer)`;
+    } finally {
+      this.setLoading(false);
+      this.messageInput?.focus();
+    }
+  }
+
+  open() {
+    if (!this.overlay) return;
+    this.overlay.dataset.open = "1";
+    document.body.classList.add("aiChatOpen");
+    this.messageInput?.focus();
+  }
+
+  close() {
+    if (!this.overlay) return;
+    this.overlay.dataset.open = "0";
+    document.body.classList.remove("aiChatOpen");
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   try{ mountFeedback(); }catch(e){ console.warn("Feedback widget failed:", e); }
+  try{ new AIChatModule(); }catch(err){ console.warn("AI chat failed:", err); }
 });
 /* === end Feedback Widget === */
 

@@ -4,31 +4,16 @@
 <head>
   <meta name="api-base" content="https://softupakaran-backend.onrender.com">
   <meta name="google-client-id" content="161160759250-tvcu3a09i8gtdeaia6gpk04jo343oiet.apps.googleusercontent.com">
-  <script src="js/env.js"></script>
+  <meta name="google-authorized-origins" content="http://localhost:8080,http://127.0.0.1:8080,http://localhost:8085,http://127.0.0.1:8085,https://softupakaran.vercel.app,https://softupakaran-cf67l89wj-subash107s-projects.vercel.app,https://subash107.github.io/softupakaran/">
+  <script src="js/env.js?v=20260306g"></script>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
 <meta content="SoftUpakaran - Products/images later." name="description"/>
-  <!-- Meta Pixel Code -->
-  <script>
-    !function(f,b,e,v,n,t,s)
-    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-    n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];
-    s.parentNode.insertBefore(t,s)}(window, document,'script',
-    'https://connect.facebook.net/en_US/fbevents.js');
-    fbq('init', '879425024802361');
-    fbq('track', 'PageView');
-  </script>
-  <noscript>
-    <img height="1" width="1" style="display:none"
-    src="https://www.facebook.com/tr?id=879425024802361&ev=PageView&noscript=1"/>
-  </noscript>
-  <!-- End Meta Pixel Code -->
+<link rel="preload" as="image" href="assets/banners/banner-1.webp" fetchpriority="high"/>
 <title>SoftUpakaran - Home</title>
 <link href="assets/logo.svg" rel="icon" type="image/svg+xml"/>
-<link href="styles.css" rel="stylesheet">
-</link>  <script src="https://accounts.google.com/gsi/client" async defer></script>
+<link href="styles.css?v=20260306a" rel="stylesheet"/>
+  <!-- Swiper removed: using native grid layout for collections -->
 </head>
 <body class="home">
 <div class="promoRibbon">
@@ -54,13 +39,16 @@
 <a class="btn" href="index.html"><span>Home</span></a>
 <a class="btn" data-open-cart="" href="product.html"><span>Cart</span> <span class="badge" data-cart-count="">0</span></a>
 <div id="googleNavBtn" class="google-nav-btn" aria-label="Google sign in"></div>
+    <button class="btn icon nav-help-btn" type="button" data-ai-help-btn aria-label="Open AI assistant">
+      <span aria-hidden="true">?</span>
+    </button>
 <a class="whatsapp-nav-btn" href="https://wa.me/97721121212121" aria-label="WhatsApp" title="WhatsApp"><svg viewBox="0 0 32 32" width="18" height="18" aria-hidden="true" focusable="false"><path fill="currentColor" d="M16 3C9.4 3 4 8.4 4 15c0 2.3.6 4.4 1.8 6.2L4 29l8-1.6c1.2.5 2.6.7 4 .7 6.6 0 12-5.4 12-12S22.6 3 16 3zm0 21.8c-1.2 0-2.4-.3-3.4-.8l-.5-.2-4.7.9.9-4.5-.3-.6c-.7-1.1-1-2.4-1-3.7 0-4.2 3.4-7.6 7.6-7.6s7.6 3.4 7.6 7.6-3.4 7.6-7.6 7.6zm4.2-5.7c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.6.1-.2.2-.7.8-.9 1-.1.2-.3.2-.5.1-1.8-.9-3-2.2-3.6-3.4-.2-.3 0-.5.1-.6.1-.1.2-.3.3-.4.1-.1.1-.2.2-.4.1-.1 0-.3 0-.4 0-.1-.6-1.5-.8-2-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.6.3-.2.2-.8.8-.8 2s.8 2.3.9 2.5c.1.2 1.6 2.6 4 3.6 2.3 1 2.3.7 2.7.6.4-.1 1.4-.6 1.6-1.1.2-.5.2-.9.1-1z"/></svg></a>
 <span class="badge delivery-badge nav-badge">Instant Delivery</span></div>
   <div class="langSwitchWrap">
     <span data-locale-text="langLabel">Language</span>
-    <div class="langSwitch" data-lang-switch="">
-      <button data-lang="en">EN</button>
-      <button data-lang="ne">ने</button>
+    <div class="langSwitch" data-lang-toggle="">
+      <button type="button" data-lang-btn="en">EN</button>
+      <button type="button" data-lang-btn="np" aria-label="Nepali" title="Nepali">ने</button>
     </div>
   </div>
   <div class="mobileNav">
@@ -82,7 +70,6 @@
 <div class="pillnav">
 <div class="pills" data-pills="">
   <a class="pill" href="category.html?c=subscriptions">Subscriptions</a>
-  <a class="pill" href="category.html?c=netflix">Netflix</a>
   <a class="pill" href="category.html?c=wp-plugins">WP Plugins</a>
   <a class="pill" href="category.html?c=wp-themes">WP Themes</a>
   <a class="pill" href="category.html?c=ecommerce">eCommerce</a>
@@ -94,83 +81,60 @@
 </header>
 <main class="container">
 <section class="heroSlider" data-hero-slider="">
-<div class="heroSliderTrack">
-<div class="heroSlide">
-<img src="assets/banners/banner-1.png"/>
-<div class="heroOverlay">
-<div class="heroText">
-<h1 data-banner-title=""></h1>
-<p data-banner-sub=""></p>
-<a class="btn primary" href="category.html">Shop now</a>
-</div>
-</div>
-</div>
-<div class="heroSlide">
-<img src="assets/banners/banner-2.png"/>
-<div class="heroOverlay">
-<div class="heroText">
-<h1 data-banner-title=""></h1>
-<p data-banner-sub=""></p>
-<a class="btn primary" href="category.html">Shop now</a>
-</div>
-</div>
-</div>
-<div class="heroSlide">
-<img src="assets/banners/banner-3.png"/>
-<div class="heroOverlay">
-<div class="heroText">
-<h1 data-banner-title=""></h1>
-<p data-banner-sub=""></p>
-<a class="btn primary" href="category.html">Shop now</a>
-</div>
-</div>
-</div>
-<div class="heroSlide">
-<img src="assets/banners/banner-4.png"/>
-<div class="heroOverlay">
-<div class="heroText">
-<h1 data-banner-title=""></h1>
-<p data-banner-sub=""></p>
-<a class="btn primary" href="category.html">Shop now</a>
-</div>
-</div>
-</div>
-<div class="heroSlide">
-<img src="assets/banners/banner-5.png"/>
-<div class="heroOverlay">
-<div class="heroText">
-<h1 data-banner-title=""></h1>
-<p data-banner-sub=""></p>
-<a class="btn primary" href="category.html">Shop now</a>
-</div>
-</div>
-</div>
-</div>
+<div class="heroSliderTrack"></div>
 <div class="heroDots"></div>
+<div class="heroMotionControl" data-motion-control>
+  <button class="heroMotionControl__btn" type="button" data-motion-toggle aria-pressed="false">Reduce motion</button>
+  <span class="heroMotionControl__hint">Tap to keep the hero still</span>
+</div>
 </section>
-<div class="heroTagline" data-locale-text="heroTagline">Digital Delivery</div>
 <div class="heroStats" data-hero-stats="">
-  <div>
+  <div class="heroStats__item" data-accent="teal">
     <strong>Instant delivery</strong>
     <p>5-30 min digital delivery</p>
   </div>
-  <div>
+  <div class="heroStats__item" data-accent="cyan">
     <strong>24/7 WhatsApp</strong>
     <p>Support + proof</p>
   </div>
-  <div>
+  <div class="heroStats__item" data-accent="amber">
     <strong>Secure checkout</strong>
     <p>Encrypted &amp; private</p>
   </div>
+  <div class="heroStats__item" data-accent="pink">
+    <strong>Instant support</strong>
+    <p>Live WhatsApp + chat</p>
+  </div>
+  <div class="heroStats__item" data-accent="purple">
+    <strong>Local dev packs</strong>
+    <p>Ready-to-use WordPress kits</p>
+  </div>
+  <div class="heroStats__particles" aria-hidden="true">
+    <span class="heroStats__particle heroStats__particle--one"></span>
+    <span class="heroStats__particle heroStats__particle--two"></span>
+    <span class="heroStats__particle heroStats__particle--three"></span>
+    <span class="heroStats__particle heroStats__particle--four"></span>
+  </div>
 </div>
-<section class="section" id="why">
-<div class="sectionHeader">
-<div>
-<h2>Collections</h2>
-<p>Quick categories like Kunyo-style navigation.</p>
-</div>
-</div>
-<div class="grid" data-categories=""></div>
+<section class="slider slider--highlight" aria-label="Featured support highlights" data-slider-module>
+  <div class="slider__viewport">
+    <div class="slider__track">
+      <article class="slide">
+        <h3 data-en="WhatsApp confirmations" data-np="व्हाट्सएप पुष्टि" data-shatter-text>WhatsApp confirmations</h3>
+        <p data-en="Every order sends credentials and proof within minutes." data-np="हरेक अर्डरमा मिनेटभित्र प्रमाण र पहुँच विवरण पठाइन्छ।" data-shatter-text>Every order sends credentials and proof within minutes.</p>
+      </article>
+      <article class="slide">
+        <h3 data-en="Secure digital delivery" data-np="सुरक्षित डिजिटल डेलिभरी" data-shatter-text>Secure digital delivery</h3>
+        <p data-en="Codes arrive instantly via encrypted messages." data-np="कोडहरू इन्क्रिप्टेड सन्देशमार्फत तुरुन्त पठाइन्छ।" data-shatter-text>Codes arrive instantly via encrypted messages.</p>
+      </article>
+      <article class="slide">
+        <h3 data-en="Local dev packs" data-np="स्थानीय विकास प्याक" data-shatter-text>Local dev packs</h3>
+        <p data-en="Ready-to-use WordPress kits with free updates." data-np="प्रयोगका लागि तयार वर्डप्रेस किटहरू नि:शुल्क अपडेटसहित।" data-shatter-text>Ready-to-use WordPress kits with free updates.</p>
+      </article>
+    </div>
+  </div>
+  <button class="slider__arrow slider__arrow--prev" type="button" data-slider-prev aria-label="Previous slide">‹</button>
+  <button class="slider__arrow slider__arrow--next" type="button" data-slider-next aria-label="Next slide">›</button>
 </section>
 <section class="section curated" id="trending">
   <div class="sectionHeader">
@@ -321,7 +285,7 @@
 <div>
 <img alt="SoftUpakaran" src="assets/logo.svg" style="height:32px">
 <p class="cardMeta" style="margin-top:10px;max-width:48ch">
-            Subscriptions, WordPress plugins, themes, VPN, and web development.
+            Premium subscriptions, WordPress plugins, themes, VPN, and web development services.
             
           </p>
 <p class="copy">New Baneshwor, Kathmandu (demo)  -  +977 01 1234567  -  contact@softupakaran.example</p>
@@ -348,12 +312,11 @@
 </div>
 <div>
 <h4>Quick links</h4>
-<a href="#collections">Collections</a>
 <a href="#trending">Trending</a>
 <a href="#tools">Tools</a>
 <a href="#popular">Popular</a>
-<a href="#why">Why choose</a>
-<a href="#testimonials">Feedback</a>
+<a href="#testimonials">Why choose</a>
+<a href="#testimonialsList">Feedback</a>
 </div>
 </div>
 <div class="copy">Â© 2025 SoftUpakaran (demo). All rights reserved.</div>
@@ -381,38 +344,59 @@
 <div class="cartFooter" data-pay-footer=""></div>
 </div>
 </div>
-<script src="js/app.js"></script>
+<div class="aiChatOverlay" data-ai-chat-overlay data-open="0" aria-live="polite">
+  <div class="aiChatCard" role="dialog" aria-label="AI assistant">
+    <div class="aiChatHeader">
+      <h3>AI Assistant</h3>
+      <button class="aiChatClose" type="button" data-ai-chat-close aria-label="Close chat">×</button>
+    </div>
+    <div class="aiChatChips" data-ai-chips=""></div>
+    <div class="aiChatMessages" data-ai-chat-log="">
+      <div class="aiMessage aiMessage--bot">Hi! Ask me about subscriptions, delivery, or how SoftUpakaran works.</div>
+    </div>
+    <div class="aiChatFooter">
+      <input type="text" class="aiChatInput" placeholder="Type your question..." data-ai-message aria-label="Your message"/>
+      <button class="btn primary" type="button" data-ai-send>Send</button>
+    </div>
+  </div>
+</div>
+<script src="js/app.js?v=20260306j"></script>
 <script src="js/main.js"></script>
-  <script src="js/auth-gate.js"></script>
-  <script src="js/scroll-animate.js"></script>
-  <script src="js/header-scroll-glow.js"></script>
-  <script src="js/banner-parallax.js"></script>
-  <script src="js/category-3d.js"></script>
+  <script src="js/auth-gate.js?v=20260305g"></script>
   <script src="js/fix-runtime.js"></script>
   <script src="js/admin-visibility.js"></script>
   <script src="js/dev-api-override.js"></script>
-<script src="js/auto-init.js"></script>
-  <script src="js/google-nav.js"></script>
+<script src="js/auto-init.js?v=20260306b"></script>
+  <script src="js/google-nav.js?v=20260305g"></script>
+  <script src="js/slider-module.js?v=20260305f"></script>
+  <script src="js/analytics-consent.js?v=20260306a"></script>
+  <script>
+    (function () {
+      function loadDotField() {
+        if (document.querySelector('script[data-dot-field]')) return;
+        var s = document.createElement("script");
+        s.src = "js/dot-field-3d.js?v=20260306b";
+        s.defer = true;
+        s.dataset.dotField = "1";
+        document.body.appendChild(s);
+      }
+      if ("requestIdleCallback" in window) {
+        window.requestIdleCallback(loadDotField, { timeout: 2200 });
+      } else {
+        window.setTimeout(loadDotField, 1200);
+      }
+    })();
+  </script>
 <div class="floatingSupport" data-floating-actions="">
+  <button class="chatFab" type="button" data-ai-chat-trigger aria-label="Open AI chat">
+    <span aria-hidden="true">🤖</span>
+    <span>Chat with AI</span>
+  </button>
   <a class="chatFab" href="https://wa.me/97721121212121" target="_blank" rel="noreferrer" aria-label="WhatsApp chat">
+    <span aria-hidden="true">💬</span>
     <span>Chat on WhatsApp</span>
   </a>
 </div>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

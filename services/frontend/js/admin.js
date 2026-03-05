@@ -23,7 +23,17 @@
     const saved = normalizeBase(localStorage.getItem("SPK_API_BASE"));
     const meta = normalizeBase(window.API_BASE);
     const host = window.location && window.location.hostname ? window.location.hostname : "";
-    if (!isLocalHost(host) && saved && isLocalApi(saved) && meta) return meta;
+    const hostIsLocal = isLocalHost(host);
+
+    if (hostIsLocal) {
+      if (saved && !isLocalApi(saved)) {
+        localStorage.removeItem("SPK_API_BASE");
+      }
+      if (saved && isLocalApi(saved)) return saved;
+      return meta || "http://localhost:4000";
+    }
+
+    if (saved && isLocalApi(saved) && meta) return meta;
     return saved || meta;
   }
 
@@ -78,10 +88,10 @@
   async function api(path, opts = {}) {
     const base = getApiBase();
     const url = base + path;
-    const headers = opts.headers || {};
+    const headers = { ...(opts.headers || {}) };
     const token = getToken();
     if (token) headers["Authorization"] = "Bearer " + token;
-    return fetch(url, { ...opts, headers });
+    return fetch(url, { ...opts, headers, credentials: "include" });
   }
 
   function showLoggedIn(isIn) {
@@ -180,6 +190,7 @@
     }
 
     try { await refreshBlogPosts(); } catch (_) { /* ignore */ }
+    try { await refreshSliderBanners(); } catch (_) { /* ignore */ }
 
     // Admin 2FA status
     try { await loadTotpStatus(); } catch (_) { /* ignore */ }
@@ -242,6 +253,7 @@
     const res = await fetch(getApiBase() + "/api/auth/login", {
       method: "POST",
       headers: {"Content-Type":"application/json"},
+      credentials: "include",
       body: JSON.stringify(payload)
     });
 
@@ -252,12 +264,22 @@
     }
 
     const data = await res.json();
-    if (!data.token) {
-      setMsg($("loginMsg"), "Login response missing token.", "error");
+    if (data.token && !isAdminJwt(data.token)) {
+      setToken("");
+      setMsg($("loginMsg"), "Admin access only.", "error");
       return;
     }
 
-    setToken(data.token);
+    if (data.token) setToken(data.token);
+    const meRes = await api("/api/me");
+    const me = meRes.ok ? await meRes.json().catch(() => null) : null;
+    if (!me || String(me.role || "").toLowerCase() !== "admin") {
+      await fetch(getApiBase() + "/api/auth/logout", { method: "POST", credentials: "include" }).catch(() => {});
+      setToken("");
+      setMsg($("loginMsg"), "Admin access only.", "error");
+      return;
+    }
+
     if ($("otp")) $("otp").value = "";
     showLoggedIn(true);
     await refreshDashboard();
@@ -268,6 +290,7 @@
   }
 
   async function logout() {
+    await fetch(getApiBase() + "/api/auth/logout", { method: "POST", credentials: "include" }).catch(() => {});
     setToken("");
     showLoggedIn(false);
     resetTotpSetup();
@@ -978,6 +1001,145 @@ async function exportFeedbackCsv(){
     }
   }
 
+  let sliderCache = [];
+  let sliderEditingMode = "new";
+  let sliderEditingId = null;
+
+  function showSliderEditor(show) {
+    const editor = $("sliderEditor");
+    if (!editor) return;
+    editor.classList.toggle("hidden", !show);
+  }
+
+  function clearSliderEditor() {
+    sliderEditingMode = "new";
+    sliderEditingId = null;
+    if ($("sliderEditorTitle")) $("sliderEditorTitle").textContent = "Add slide";
+    if ($("sliderTitle")) $("sliderTitle").value = "";
+    if ($("sliderSubtitle")) $("sliderSubtitle").value = "";
+    if ($("sliderLink")) $("sliderLink").value = "";
+    if ($("sliderImage")) $("sliderImage").value = "";
+    if ($("sliderBadge")) $("sliderBadge").value = "";
+    if ($("sliderMetric")) $("sliderMetric").value = "";
+    if ($("sliderMetricLabel")) $("sliderMetricLabel").value = "";
+    if ($("sliderOrder")) $("sliderOrder").value = "0";
+    if ($("sliderStatus")) $("sliderStatus").value = "published";
+  }
+
+  function fillSliderEditor(banner) {
+    if (!banner) return;
+    sliderEditingMode = "edit";
+    sliderEditingId = banner.id;
+    if ($("sliderEditorTitle")) $("sliderEditorTitle").textContent = "Edit slide";
+    if ($("sliderTitle")) $("sliderTitle").value = banner.title || "";
+    if ($("sliderSubtitle")) $("sliderSubtitle").value = banner.subtitle || "";
+    if ($("sliderLink")) $("sliderLink").value = banner.link || "";
+    if ($("sliderImage")) $("sliderImage").value = banner.image || "";
+    if ($("sliderBadge")) $("sliderBadge").value = banner.badge || "";
+    if ($("sliderMetric")) $("sliderMetric").value = banner.metric || "";
+    if ($("sliderMetricLabel")) $("sliderMetricLabel").value = banner.metricLabel || "";
+    if ($("sliderOrder")) $("sliderOrder").value = String(banner.orderIndex ?? 0);
+    if ($("sliderStatus")) $("sliderStatus").value = banner.status || "published";
+  }
+
+  function renderSliderTable(rows) {
+    const table = $("sliderTable");
+    if (!table) return;
+    const tbody = table.querySelector("tbody");
+    if (!tbody) return;
+    tbody.innerHTML = (Array.isArray(rows) ? rows : []).map((row) => {
+      const status = row.status || "published";
+      const title = row.title || "";
+      return `
+        <tr>
+          <td>${row.id ?? ""}</td>
+          <td>${escapeHtml(title)}</td>
+          <td>${escapeHtml(row.link || "")}</td>
+          <td><span class="badge ${status === "published" ? "ok" : "warn"}">${escapeHtml(status)}</span></td>
+          <td>${row.orderIndex ?? 0}</td>
+          <td>
+            <button class="btn" data-slider-edit="${escapeAttr(row.id)}">Edit</button>
+            <button class="btn danger" data-slider-del="${escapeAttr(row.id)}" data-slider-del-title="${escapeAttr(title || row.id)}">Delete</button>
+          </td>
+        </tr>
+      `;
+    }).join("");
+    setMsg($("sliderMsg"), "");
+  }
+
+  async function refreshSliderBanners() {
+    const msg = $("sliderMsg");
+    if (msg) setMsg(msg, "");
+    try {
+      const res = await api("/api/admin/slider-banners");
+      if (!res.ok) throw new Error(`Slider fetch failed: ${res.status}`);
+      const rows = await res.json();
+      sliderCache = Array.isArray(rows) ? rows : [];
+      renderSliderTable(sliderCache);
+    } catch (err) {
+      setMsg(msg, String(err.message || err), "error");
+    }
+  }
+
+  async function saveSliderBanner() {
+    const title = ($("sliderTitle")?.value || "").trim();
+    if (!title) {
+      setMsg($("sliderMsg"), "Title is required.", "error");
+      return;
+    }
+    const payload = {
+      title,
+      subtitle: ($("sliderSubtitle")?.value || "").trim(),
+      link: ($("sliderLink")?.value || "").trim(),
+      image: ($("sliderImage")?.value || "").trim(),
+      badge: ($("sliderBadge")?.value || "").trim(),
+      metric: ($("sliderMetric")?.value || "").trim(),
+      metric_label: ($("sliderMetricLabel")?.value || "").trim(),
+      order_index: parseInt($("sliderOrder")?.value || "0", 10) || 0,
+      status: ($("sliderStatus")?.value || "published"),
+    };
+    const endpoint =
+      sliderEditingMode === "edit"
+        ? `/api/admin/slider-banners/${encodeURIComponent(sliderEditingId)}`
+        : "/api/admin/slider-banners";
+    const method = sliderEditingMode === "edit" ? "PATCH" : "POST";
+    try {
+      const res = await api(endpoint, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const txt = await safeText(res);
+        setMsg($("sliderMsg"), `Save failed: ${txt}`, "error");
+        return;
+      }
+      setMsg($("sliderMsg"), "Slider banner saved.", "success");
+      clearSliderEditor();
+      showSliderEditor(false);
+      await refreshSliderBanners();
+    } catch (err) {
+      setMsg($("sliderMsg"), String(err.message || err), "error");
+    }
+  }
+
+  async function deleteSliderBanner(id, title) {
+    if (!id) return;
+    if (!confirm(`Delete slider banner ${title || id}?`)) return;
+    try {
+      const res = await api(`/api/admin/slider-banners/${encodeURIComponent(id)}`, { method: "DELETE" });
+      if (!res.ok) {
+        const txt = await safeText(res);
+        setMsg($("sliderMsg"), `Delete failed: ${txt}`, "error");
+        return;
+      }
+      setMsg($("sliderMsg"), "Slider banner deleted.", "success");
+      await refreshSliderBanners();
+    } catch (err) {
+      setMsg($("sliderMsg"), String(err.message || err), "error");
+    }
+  }
+
   // ---------- Products (CRUD + Search + Pagination) ----------
   let prodEditingMode = "new"; // "new" | "edit"
   let prodEditingId = null;
@@ -1400,6 +1562,35 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     });
 
+    $("btnSliderRefresh")?.addEventListener("click", () => refreshSliderBanners());
+    $("btnSliderNew")?.addEventListener("click", () => {
+      clearSliderEditor();
+      showSliderEditor(true);
+      setMsg($("sliderMsg"), "");
+    });
+    $("btnSliderSave")?.addEventListener("click", saveSliderBanner);
+    $("btnSliderCancel")?.addEventListener("click", () => {
+      clearSliderEditor();
+      showSliderEditor(false);
+    });
+    $("sliderTable")?.addEventListener("click", (e) => {
+      const editBtn = e.target?.closest?.("button[data-slider-edit]");
+      if (editBtn) {
+        const id = editBtn.getAttribute("data-slider-edit");
+        const banner = sliderCache.find((b) => String(b.id) === String(id));
+        if (banner) {
+          fillSliderEditor(banner);
+          showSliderEditor(true);
+          setMsg($("sliderMsg"), "");
+        }
+        return;
+      }
+      const delBtn = e.target?.closest?.("button[data-slider-del]");
+      if (delBtn) {
+        deleteSliderBanner(delBtn.getAttribute("data-slider-del"), delBtn.getAttribute("data-slider-del-title"));
+      }
+    });
+
 
     // Products
     // Load categories into dropdowns (public endpoint)
@@ -1461,13 +1652,24 @@ $("btnUsersExport")?.addEventListener("click", exportUsersCsv);
 $("btnFbExport")?.addEventListener("click", exportFeedbackCsv);
 $("btnLoginsRefresh")?.addEventListener("click", () => refreshLoginHistory());
 
-// auto-show if token exists
+// auto-show when already authenticated (token or cookie session)
     if (getToken()) {
       showLoggedIn(true);
       try { await refreshDashboard(); }
       catch (e) { /* ignore */ }
     } else {
-      showLoggedIn(false);
+      try {
+        const meRes = await api("/api/me");
+        const me = meRes.ok ? await meRes.json().catch(() => null) : null;
+        if (me && String(me.role || "").toLowerCase() === "admin") {
+          showLoggedIn(true);
+          await refreshDashboard();
+        } else {
+          showLoggedIn(false);
+        }
+      } catch (_) {
+        showLoggedIn(false);
+      }
     }
   });
 })();

@@ -15,6 +15,59 @@ function ensureColumn(table, column, type) {
   });
 }
 
+const DEFAULT_SLIDER_BANNERS = [
+  {
+    title: "Premium subscriptions in Nepal",
+    subtitle: "Netflix, Canva, ChatGPT, and more",
+    link: "category.html?c=subscriptions",
+    image: "assets/banners/banner-1.webp",
+    badge: "Nepal ready",
+    metric: "10K+",
+    metric_label: "Digital deliveries",
+    order_index: 1
+  },
+  {
+    title: "WordPress plugins and SEO tools",
+    subtitle: "Speed, security, and conversion upgrades",
+    link: "category.html?c=wp-plugins",
+    image: "assets/banners/banner-2.webp",
+    badge: "WP builders",
+    metric: "120+",
+    metric_label: "Premium plugins",
+    order_index: 2
+  },
+  {
+    title: "Modern WordPress themes",
+    subtitle: "Blog, news, and store-ready templates",
+    link: "category.html?c=wp-themes",
+    image: "assets/banners/banner-3.webp",
+    badge: "Design ready",
+    metric: "85+",
+    metric_label: "Themes curated",
+    order_index: 3
+  },
+  {
+    title: "Netflix plans and profiles",
+    subtitle: "Affordable access with instant activation",
+    link: "category.html?c=netflix",
+    image: "assets/banners/banner-4.webp",
+    badge: "Streaming",
+    metric: "5 min",
+    metric_label: "Activation time",
+    order_index: 4
+  },
+  {
+    title: "Web development packages",
+    subtitle: "Custom builds for businesses",
+    link: "category.html?c=web-development",
+    image: "assets/banners/banner-5.webp",
+    badge: "Custom desks",
+    metric: "40+",
+    metric_label: "Dev partners",
+    order_index: 5
+  }
+];
+
 function initDb() {
   db.serialize(() => {
     db.run(`
@@ -98,6 +151,63 @@ function initDb() {
       )
     `);
 
+    // Login lockout state (keyed by email/ip prefixes)
+    db.run(`
+      CREATE TABLE IF NOT EXISTS auth_lockouts (
+        lock_key TEXT PRIMARY KEY,
+        failed_count INTEGER NOT NULL DEFAULT 0,
+        first_failed_at TEXT,
+        last_failed_at TEXT,
+        lock_until TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      )
+    `);
+    db.run(`
+      CREATE INDEX IF NOT EXISTS idx_auth_lockouts_lock_until
+      ON auth_lockouts(lock_until)
+    `);
+    ensureColumn("auth_lockouts", "failed_count", "INTEGER NOT NULL DEFAULT 0");
+    ensureColumn("auth_lockouts", "first_failed_at", "TEXT");
+    ensureColumn("auth_lockouts", "last_failed_at", "TEXT");
+    ensureColumn("auth_lockouts", "lock_until", "TEXT");
+    ensureColumn("auth_lockouts", "updated_at", "TEXT DEFAULT (datetime('now'))");
+
+    // Refresh tokens for rotation + revocation
+    db.run(`
+      CREATE TABLE IF NOT EXISTS refresh_tokens (
+        jti TEXT PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        token_hash TEXT NOT NULL,
+        parent_jti TEXT,
+        issued_at TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        consumed_at TEXT,
+        revoked_at TEXT,
+        revoked_reason TEXT,
+        replaced_by_jti TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )
+    `);
+    db.run(`
+      CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user
+      ON refresh_tokens(user_id)
+    `);
+    db.run(`
+      CREATE INDEX IF NOT EXISTS idx_refresh_tokens_parent
+      ON refresh_tokens(parent_jti)
+    `);
+    ensureColumn("refresh_tokens", "parent_jti", "TEXT");
+    ensureColumn("refresh_tokens", "issued_at", "TEXT");
+    ensureColumn("refresh_tokens", "expires_at", "TEXT");
+    ensureColumn("refresh_tokens", "consumed_at", "TEXT");
+    ensureColumn("refresh_tokens", "revoked_at", "TEXT");
+    ensureColumn("refresh_tokens", "revoked_reason", "TEXT");
+    ensureColumn("refresh_tokens", "replaced_by_jti", "TEXT");
+    ensureColumn("refresh_tokens", "updated_at", "TEXT DEFAULT (datetime('now'))");
+
     // Customer feedback
     db.run(`
       CREATE TABLE IF NOT EXISTS feedback (
@@ -114,16 +224,16 @@ function initDb() {
     `);
 
     // Simple key/value settings store
-      db.run(`
-        CREATE TABLE IF NOT EXISTS settings (
-          key TEXT PRIMARY KEY,
-          value TEXT
+    db.run(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT
       )
     `);
 
     // Default settings (safe to re-run)
-      db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_number', '')`);
-      db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('esewa_qr_filename', '')`);
+    db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_number', '')`);
+    db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('esewa_qr_filename', '')`);
 
     // Blog posts
     db.run(`
@@ -140,6 +250,29 @@ function initDb() {
         updated_at TEXT DEFAULT (datetime('now'))
       )
     `);
+
+    db.run(`
+      CREATE TABLE IF NOT EXISTS slider_banners (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        subtitle TEXT,
+        link TEXT,
+        image TEXT,
+        badge TEXT,
+        metric TEXT,
+        metric_label TEXT,
+        order_index INTEGER DEFAULT 0,
+        status TEXT DEFAULT 'published',
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      )
+    `);
+    // Keep seeded/local banner paths on modern compressed assets.
+    db.run(`UPDATE slider_banners SET image = 'assets/banners/banner-1.webp' WHERE image = 'assets/banners/banner-1.png'`);
+    db.run(`UPDATE slider_banners SET image = 'assets/banners/banner-2.webp' WHERE image = 'assets/banners/banner-2.png'`);
+    db.run(`UPDATE slider_banners SET image = 'assets/banners/banner-3.webp' WHERE image = 'assets/banners/banner-3.png'`);
+    db.run(`UPDATE slider_banners SET image = 'assets/banners/banner-4.webp' WHERE image = 'assets/banners/banner-4.png'`);
+    db.run(`UPDATE slider_banners SET image = 'assets/banners/banner-5.webp' WHERE image = 'assets/banners/banner-5.png'`);
 
     db.get("SELECT COUNT(*) AS count FROM blog_posts", (err, row) => {
       if (err) {
@@ -183,6 +316,40 @@ function initDb() {
       posts.forEach(p => {
         const publishedAt = p.published_at || now;
         stmt.run(p.slug, p.title, p.summary, p.content, p.featured_image, publishedAt, p.status || "published", publishedAt, publishedAt);
+      });
+      stmt.finalize();
+    });
+
+    db.get("SELECT COUNT(*) AS count FROM slider_banners", (err, row) => {
+      if (err) {
+        console.error("⚠️ Failed to check slider banners count:", err.message);
+        return;
+      }
+
+      if (row.count > 0) {
+        console.log("📰 Slider banners already seeded.");
+        return;
+      }
+
+      console.log("✨ Seeding default slider banners...");
+      const now = new Date().toISOString();
+      const stmt = db.prepare(`
+        INSERT INTO slider_banners (title, subtitle, link, image, badge, metric, metric_label, order_index, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'published', ?, ?)
+      `);
+      DEFAULT_SLIDER_BANNERS.forEach((banner) => {
+        stmt.run(
+          banner.title,
+          banner.subtitle,
+          banner.link,
+          banner.image,
+          banner.badge,
+          banner.metric,
+          banner.metric_label,
+          banner.order_index || 0,
+          now,
+          now
+        );
       });
       stmt.finalize();
     });

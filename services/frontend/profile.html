@@ -1,11 +1,13 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta name="api-base" content="https://softupakaran-backend.onrender.com">
-<script src="js/env.js"></script>
+  <meta name="google-client-id" content="161160759250-tvcu3a09i8gtdeaia6gpk04jo343oiet.apps.googleusercontent.com">
+  <meta name="google-authorized-origins" content="https://softupakaran.vercel.app,https://softupakaran-cf67l89wj-subash107s-projects.vercel.app,https://subash107.github.io/softupakaran/">
+<script src="js/env.js?v=20260306g"></script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SoftUpakaran • Profile</title>
+  <title>SoftUpakaran â€¢ Profile</title>
   <meta name="description" content="SoftUpakaran profile: register/login and manage your session." />
   <link rel="icon" type="image/svg+xml" href="assets/logo.svg"/>
   <link href="styles.css" rel="stylesheet">
@@ -43,7 +45,7 @@
     <div class="profileGrid">
       <section class="panelCard">
         <h2 class="panelTitle">Account</h2>
-        <div id="status" class="muted">Checking session…</div>
+        <div id="status" class="muted">Checking sessionâ€¦</div>
         <div id="meDetails" class="muted" style="display:none;margin-top:10px"></div>
 
         <!-- Feedback (shows after user logs in) -->
@@ -56,16 +58,16 @@
           <div class="row2">
             <select id="fbRating" class="inp" aria-label="Rating">
               <option value="">Rating (optional)</option>
-              <option value="5">★★★★★ (5)</option>
-              <option value="4">★★★★☆ (4)</option>
-              <option value="3">★★★☆☆ (3)</option>
-              <option value="2">★★☆☆☆ (2)</option>
-              <option value="1">★☆☆☆☆ (1)</option>
+              <option value="5">â˜…â˜…â˜…â˜…â˜… (5)</option>
+              <option value="4">â˜…â˜…â˜…â˜…â˜† (4)</option>
+              <option value="3">â˜…â˜…â˜…â˜†â˜† (3)</option>
+              <option value="2">â˜…â˜…â˜†â˜†â˜† (2)</option>
+              <option value="1">â˜…â˜†â˜†â˜†â˜† (1)</option>
             </select>
             <input id="fbTitle" class="inp" placeholder="Short title (optional)" maxlength="60" />
           </div>
           <div style="height:10px"></div>
-          <textarea id="fbMessage" class="inp" rows="4" placeholder="Write your feedback…" style="resize:vertical;min-height:96px"></textarea>
+          <textarea id="fbMessage" class="inp" rows="4" placeholder="Write your feedbackâ€¦" style="resize:vertical;min-height:96px"></textarea>
           <div class="btnRow">
             <button id="btnSendFeedback" class="btn primary" type="button">Submit feedback</button>
           </div>
@@ -75,7 +77,7 @@
         <div class="btnRow">
           <button id="btnLogout" class="btn" type="button">Logout</button>
                     <a class="btn" href="index.html" id="homeLink" style="text-decoration:none">Back to Home</a>
-<a class="btn" href="admin.html" id="adminLink" style="text-decoration:none">Admin</a>
+<a class="btn" href="secret-admin-panel.html" id="adminLink" style="text-decoration:none">Admin</a>
         </div>
         <pre id="meBox" style="display:none"></pre>
         <div id="meMsg" class="msg muted"></div>
@@ -118,9 +120,9 @@
   </main>
 
   <!-- Shared scripts -->
-  <script src="js/app.js"></script>
-  <script src="js/auth-gate.js"></script>
-  <script src="js/auth.js"></script>
+  <script src="js/app.js?v=20260306j"></script>
+  <script src="js/auth-gate.js?v=20260305g"></script>
+  <script src="js/auth.js?v=20260305g"></script>
 
   <script>
     // Render navbar from js/app.js if present; otherwise, keep page working.
@@ -194,7 +196,7 @@
 
     async function loadMe(){
       try{
-        setStatus('Loading profile…');
+        setStatus('Loading profileâ€¦');
         const me = await Auth.me();
         currentMe = me;
         if(!me){
@@ -220,10 +222,10 @@
       const btn = document.getElementById('btnSendFeedback');
       if(!btn) return;
       btn.disabled = true;
-      showMsg(fbMsg, 'Submitting feedback…');
+      showMsg(fbMsg, 'Submitting feedbackâ€¦');
       try{
-        const token = localStorage.getItem('token');
-        if(!token) throw new Error('Please sign in first.');
+        const token = (Auth.getStoredToken ? Auth.getStoredToken() : (localStorage.getItem('token') || ''));
+        if(!currentMe || !currentMe.email) throw new Error('Please sign in first.');
 
         const rating = document.getElementById('fbRating')?.value || '';
         const title = document.getElementById('fbTitle')?.value || '';
@@ -231,14 +233,14 @@
         if(!message) throw new Error('Please write a feedback message.');
 
         // Merge title into message nicely (keeps DB simple)
-        const finalMessage = title.trim() ? `${title.trim()} — ${message}` : message;
+        const finalMessage = title.trim() ? `${title.trim()} â€” ${message}` : message;
 
+        const headers = { 'Content-Type': 'application/json' };
+        if (token && token !== 'local-google') headers['Authorization'] = 'Bearer ' + token;
         const res = await fetch(Auth.getApiBase() + '/api/feedback', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token,
-          },
+          credentials: 'include',
+          headers,
           body: JSON.stringify({
             name: currentMe?.name || '',
             email: currentMe?.email || '',
@@ -255,7 +257,7 @@
         document.getElementById('fbMessage').value = '';
         document.getElementById('fbTitle').value = '';
         document.getElementById('fbRating').value = '';
-        showMsg(fbMsg, 'Thanks! Your feedback is published on the Home page ✅', true);
+        showMsg(fbMsg, 'Thanks! Your feedback is published on the Home page âœ…', true);
       }catch(e){
         showMsg(fbMsg, 'Feedback failed: ' + (e.message || e), false);
       }finally{
@@ -269,12 +271,12 @@
     document.getElementById('btnLogin').addEventListener('click', async function(){
       const btn = this;
       btn.disabled = true;
-      showMsg(document.getElementById('loginMsg'), 'Signing in…');
+      showMsg(document.getElementById('loginMsg'), 'Signing inâ€¦');
       try{
         const email = document.getElementById('loginEmail').value.trim();
         const password = document.getElementById('loginPassword').value;
         await Auth.login(email, password);
-        showMsg(document.getElementById('loginMsg'), 'Login success ✅', true);
+        showMsg(document.getElementById('loginMsg'), 'Login success âœ…', true);
         document.dispatchEvent(new Event('auth:changed'));
         await loadMe();
       }catch(e){
@@ -287,14 +289,14 @@
     document.getElementById('btnRegister').addEventListener('click', async function(){
       const btn = this;
       btn.disabled = true;
-      showMsg(document.getElementById('regMsg'), 'Creating account…');
+      showMsg(document.getElementById('regMsg'), 'Creating accountâ€¦');
       try{
         const name = document.getElementById('regName').value.trim();
         const email = document.getElementById('regEmail').value.trim();
         const password = document.getElementById('regPassword').value;
         const whatsapp = document.getElementById('regWhatsapp').value.trim();
         await Auth.register({ name, email, password, whatsapp });
-        showMsg(document.getElementById('regMsg'), 'Account created & signed in ✅', true);
+        showMsg(document.getElementById('regMsg'), 'Account created & signed in âœ…', true);
         document.dispatchEvent(new Event('auth:changed'));
         await loadMe();
         // clear form
@@ -308,7 +310,7 @@
     });
 
     document.getElementById('btnLogout').addEventListener('click', async function(){
-      Auth.clearToken();
+      await Auth.clearToken();
       showMsg(meMsg, 'Logged out.', true);
       document.dispatchEvent(new Event('auth:changed'));
       await loadMe();
@@ -321,9 +323,12 @@ document.addEventListener('auth:changed', loadMe);
   <script src="js/fix-runtime.js"></script>
   <script src="js/admin-visibility.js"></script>
   <script src="js/dev-api-override.js"></script>
-<script src="js/auto-init.js"></script>
-  <script src="js/google-nav.js"></script>
+<script src="js/auto-init.js?v=20260306b"></script>
+  <script src="js/google-nav.js?v=20260305g"></script>
+  <script src="js/analytics-consent.js?v=20260306a"></script>
 </body>
 </html>
+
+
 
 
