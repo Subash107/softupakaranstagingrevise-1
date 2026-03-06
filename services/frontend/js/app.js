@@ -1,22 +1,6 @@
 ﻿/* === Banner Config (edit later easily) === */
 const BANNERS = [
   {
-    title: "Premium subscriptions in Nepal",
-    sub: "Netflix, Canva, ChatGPT, and more",
-    link: "category.html?c=subscriptions",
-    badge: "Nepal ready",
-    metric: "10K+",
-    metricLabel: "Digital deliveries"
-  },
-  {
-    title: "WordPress plugins and SEO tools",
-    sub: "Speed, security, and conversion upgrades",
-    link: "category.html?c=wp-plugins",
-    badge: "WP builders",
-    metric: "120+",
-    metricLabel: "Premium plugins"
-  },
-  {
     title: "Modern WordPress themes",
     sub: "Blog, news, and store-ready templates",
     link: "category.html?c=wp-themes",
@@ -42,7 +26,7 @@ const BANNERS = [
   }
 ];
 let sliderBanners = BANNERS.slice();
-const HERO_BANNER_CACHE_KEY = "SPK_HERO_BANNER_CACHE_V2";
+const HERO_BANNER_CACHE_KEY = "SPK_HERO_BANNER_CACHE_V3";
 const HERO_BANNER_CACHE_TTL = 1000 * 60 * 60 * 6;
 
 // --- Checkout config (replace with your real details) ---
@@ -56,6 +40,28 @@ const API_BASE_HOST = API_BASE ? API_BASE.replace(/\/$/, "") : "";
   const ILM_STORE_API = "https://store.ilovemithila.com/wp-json/wc/store";
   const ILM_PROXY_BASE = API_BASE ? `${API_BASE}/api/public/ilm` : "";
 const BLOG_POST_LIMIT = 4;
+const DEFAULT_BLOG_POSTS = [
+  {
+    slug: "top-digital-products-nepal",
+    title: "Top 5 Digital Products You Can Buy Instantly in Nepal",
+    summary:
+      "Discover the most popular digital products you can purchase and receive instantly in Nepal.",
+    content:
+      "Digital products are becoming more popular in Nepal due to instant delivery and easy payments.",
+    featured_image: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d",
+    published_at: "2026-02-25T16:52:48.091Z",
+  },
+  {
+    slug: "order-digital-products-whatsapp",
+    title: "How to Order Digital Products Instantly via WhatsApp",
+    summary:
+      "Learn how to order digital products quickly and securely using WhatsApp instant support.",
+    content:
+      "Ordering digital products on SoftUpakaran is simple and fast with WhatsApp confirmation.",
+    featured_image: "https://images.unsplash.com/photo-1611162617474-5b21e879e113",
+    published_at: "2026-02-25T16:51:32.342Z",
+  },
+];
 
 const CATEGORY_ORDER = [
   "freefire",
@@ -628,14 +634,37 @@ function blogCardHtml(post) {
 }
 
 async function loadBlogPosts() {
+  const endpoints = [];
+  if (API_BASE) {
+    endpoints.push(`${API_BASE}/api/public/blog-posts?limit=${BLOG_POST_LIMIT}`);
+  }
+  endpoints.push(`/api/public/blog-posts?limit=${BLOG_POST_LIMIT}`);
+
+  const fetchWithTimeout = async (url, timeoutMs = 2400) => {
+    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timer = controller ? window.setTimeout(() => controller.abort(), timeoutMs) : 0;
+    try {
+      const res = await fetch(url, {
+        cache: "no-cache",
+        signal: controller ? controller.signal : undefined,
+      });
+      if (!res.ok) return [];
+      const rows = await res.json();
+      return Array.isArray(rows) ? rows : [];
+    } finally {
+      if (timer) window.clearTimeout(timer);
+    }
+  };
+
   try {
-    const res = await fetch(`${API_BASE}/api/public/blog-posts?limit=${BLOG_POST_LIMIT}`, { cache: "no-cache" });
-    if (!res.ok) throw new Error("Failed to load blog posts");
-    const rows = await res.json();
-    return Array.isArray(rows) ? rows : [];
+    for (const endpoint of endpoints) {
+      const rows = await fetchWithTimeout(endpoint);
+      if (rows.length) return rows;
+    }
+    return DEFAULT_BLOG_POSTS.slice();
   } catch (error) {
     console.warn("Failed to load blog posts:", error);
-    return [];
+    return DEFAULT_BLOG_POSTS.slice();
   }
 }
 
@@ -1806,7 +1835,7 @@ async function init(){
   refreshCatalogUi();
   const settingsTask = scheduleIdleTask(() => loadPublicSettings().catch(() => {}), 1200);
   const testimonialsTask = scheduleIdleTask(() => loadTestimonials().catch(() => {}), 1800);
-  const blogTask = scheduleIdleTask(() => loadAndRenderBlog().catch(() => {}), 2200);
+  const blogTask = loadAndRenderBlog().catch(() => {});
   const catalogTask = scheduleIdleTask(
     () =>
       loadCatalogFromApi()
