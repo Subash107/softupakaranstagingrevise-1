@@ -117,6 +117,9 @@ function initDb() {
         game_uid TEXT,
         product_id TEXT,
         quantity INTEGER,
+        subtotal_npr INTEGER,
+        discount_npr INTEGER,
+        coupon_code TEXT,
         total_npr INTEGER,
         payment_method TEXT,
         status TEXT,
@@ -130,6 +133,9 @@ function initDb() {
     ensureColumn("orders", "whatsapp", "TEXT");
     ensureColumn("orders", "raw_cart_json", "TEXT");
     ensureColumn("orders", "source", "TEXT");
+    ensureColumn("orders", "subtotal_npr", "INTEGER");
+    ensureColumn("orders", "discount_npr", "INTEGER");
+    ensureColumn("orders", "coupon_code", "TEXT");
     ensureColumn("products", "price_usd", "INTEGER");
     ensureColumn("products", "tier", "TEXT");
     ensureColumn("products", "availability", "TEXT");

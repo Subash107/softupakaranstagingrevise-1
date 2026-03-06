@@ -40,6 +40,9 @@ const API_BASE_HOST = API_BASE ? API_BASE.replace(/\/$/, "") : "";
   const ILM_STORE_API = "https://store.ilovemithila.com/wp-json/wc/store";
   const ILM_PROXY_BASE = API_BASE ? `${API_BASE}/api/public/ilm` : "";
 const BLOG_POST_LIMIT = 4;
+const COUPON_CODE = "SOFT10";
+const COUPON_DISCOUNT_NPR = 5;
+const COUPON_STORAGE_KEY = "SPK_COUPON_SOFT10_ACTIVE";
 const DEFAULT_BLOG_POSTS = [
   {
     slug: "top-digital-products-nepal",
@@ -750,6 +753,36 @@ function cartTotal(){
   return cartLines().reduce((sum, l) => sum + l.lineTotal, 0);
 }
 
+function isCouponApplied(){
+  try {
+    return localStorage.getItem(COUPON_STORAGE_KEY) === "1";
+  } catch (_) {
+    return false;
+  }
+}
+
+function setCouponApplied(active){
+  try {
+    if (active) localStorage.setItem(COUPON_STORAGE_KEY, "1");
+    else localStorage.removeItem(COUPON_STORAGE_KEY);
+  } catch (_) {
+    // Ignore localStorage failures.
+  }
+}
+
+function applyCouponCode(code){
+  const normalized = String(code || "").trim().toUpperCase();
+  if (normalized !== COUPON_CODE) return false;
+  setCouponApplied(true);
+  return true;
+}
+
+function couponDiscount(subtotal = cartTotal()){
+  if (!isCouponApplied()) return 0;
+  const safeSubtotal = Math.max(0, Math.round(Number(subtotal) || 0));
+  return Math.min(COUPON_DISCOUNT_NPR, safeSubtotal);
+}
+
 function $(sel, root=document){ return root.querySelector(sel); }
 function $all(sel, root=document){ return Array.from(root.querySelectorAll(sel)); }
 
@@ -1359,10 +1392,16 @@ function renderCart(){
 
   initLazyImages(body);
 
+  const subtotal = cartTotal();
+  const discountNpr = couponDiscount(subtotal);
+  const total = Math.max(0, subtotal - discountNpr);
+
   footer.innerHTML = `
     ${statusHtml}
     <div>
-      <div class="tot">Total: ${formatNPR(cartTotal())}</div>
+      <div class="small">Subtotal: ${formatNPR(subtotal)}</div>
+      ${discountNpr ? `<div class="small">Coupon (${COUPON_CODE}): -${formatNPR(discountNpr)}</div>` : ""}
+      <div class="tot">Total: ${formatNPR(total)}</div>
       <div class="notice">Demo checkout only (no payment). Replace later with real gateway.</div>
     </div>
     <div>
@@ -1412,6 +1451,53 @@ function wireCartButtons(){
     e.preventDefault();
     openCart();
   }));
+}
+
+function wireCouponCodeTrigger(){
+  document.querySelectorAll("[data-apply-coupon]").forEach((button) => {
+    if (button._couponHandler) {
+      button.removeEventListener("click", button._couponHandler);
+    }
+    const markApplied = () => {
+      if (!button.dataset.originalLabel) {
+        button.dataset.originalLabel = (button.textContent || "").trim();
+      }
+      button.classList.add("is-applied");
+      button.setAttribute("title", `${COUPON_CODE} applied (Rs. ${COUPON_DISCOUNT_NPR} off)`);
+      if (button.dataset.originalLabel) {
+        button.textContent = "Code applied";
+      }
+      if ((button.tagName || "").toLowerCase() === "a") {
+        button.setAttribute("href", "#");
+      }
+    };
+    const handler = (event) => {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      const code = button.getAttribute("data-apply-coupon") || COUPON_CODE;
+      if (!applyCouponCode(code)) return;
+      markApplied();
+      try {
+        if (navigator && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+          navigator.clipboard.writeText(COUPON_CODE).catch(() => {});
+        }
+      } catch (_) {
+        // Ignore clipboard failures.
+      }
+      if (cartCount() > 0) {
+        openCart();
+      } else {
+        alert(`${COUPON_CODE} applied. Add items and checkout to get Rs. ${COUPON_DISCOUNT_NPR} off.`);
+      }
+    };
+    button.addEventListener("click", handler);
+    button._couponHandler = handler;
+    if (isCouponApplied()) {
+      markApplied();
+    }
+  });
 }
 
 function wireSearch(){
@@ -1541,7 +1627,9 @@ async function sendOrderToBackend(extraNote){
       return { ok: false, error: "Cart is empty" };
     }
 
-    const total = cartTotal();
+    const subtotal = cartTotal();
+    const discountNpr = couponDiscount(subtotal);
+    const total = Math.max(0, subtotal - discountNpr);
     const payload = {
       source: "softupakaran-web",
       items: lines.map(l => ({
@@ -1550,6 +1638,9 @@ async function sendOrderToBackend(extraNote){
         qty: l.qty,
         lineTotal: l.lineTotal
       })),
+      subtotalNpr: subtotal,
+      discountNpr,
+      couponCode: discountNpr ? COUPON_CODE : null,
       totalNpr: total,
       extraNote: extraNote || null
     };
@@ -1601,9 +1692,12 @@ async function triggerDemoOrder(){
 
 function buildWhatsAppMessage(){
   const lines = cartLines();
-  const total = cartTotal();
+  const subtotal = cartTotal();
+  const discountNpr = couponDiscount(subtotal);
+  const total = Math.max(0, subtotal - discountNpr);
   const items = lines.map(l => `- ${l.name} x${l.qty} = ${formatNPR(l.lineTotal)}`).join("\\n");
-  return `Hello SoftUpakaran,\n\nI want to order:\n${items}\n\nTotal: ${formatNPR(total)}\n\nPlease guide me for payment & delivery.`;
+  const discountLine = discountNpr ? `Coupon (${COUPON_CODE}): -${formatNPR(discountNpr)}\n` : "";
+  return `Hello SoftUpakaran,\n\nI want to order:\n${items}\n\nSubtotal: ${formatNPR(subtotal)}\n${discountLine}Total: ${formatNPR(total)}\n\nPlease guide me for payment & delivery.`;
 }
 
 function openPayModal(){
@@ -1612,7 +1706,9 @@ function openPayModal(){
 
   const body = backdrop.querySelector("[data-pay-body]");
   const footer = backdrop.querySelector("[data-pay-footer]");
-  const total = cartTotal();
+  const subtotal = cartTotal();
+  const discountNpr = couponDiscount(subtotal);
+  const total = Math.max(0, subtotal - discountNpr);
 
   body.innerHTML = `
     <div class="payGrid">
@@ -1633,6 +1729,7 @@ function openPayModal(){
           <button class="btn" data-pay-copy>Total: ${formatNPR(total)}</button>
           <button class="btn" data-pay-after>Paid (send proof)</button>
         </div>
+        ${discountNpr ? `<div class="small" style="margin-top:10px">Subtotal: ${formatNPR(subtotal)} · Coupon (${COUPON_CODE}): -${formatNPR(discountNpr)}</div>` : ""}
       </div>
     </div>
   `;
@@ -1865,6 +1962,7 @@ async function init(){
   buildCartModal();
   wirePayModal();
   wireCartButtons();
+  wireCouponCodeTrigger();
   wireSearch();
   void Promise.allSettled([settingsTask, testimonialsTask, blogTask, heroTask, catalogTask]);
 
