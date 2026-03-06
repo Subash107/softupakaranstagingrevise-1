@@ -634,6 +634,13 @@ function blogCardHtml(post) {
 }
 
 async function loadBlogPosts() {
+  const isGithubPagesHost =
+    typeof window !== "undefined" &&
+    /\.github\.io$/i.test(window.location && window.location.hostname ? window.location.hostname : "");
+  if (isGithubPagesHost) {
+    return DEFAULT_BLOG_POSTS.slice();
+  }
+
   const endpoints = [];
   if (API_BASE) {
     endpoints.push(`${API_BASE}/api/public/blog-posts?limit=${BLOG_POST_LIMIT}`);
