@@ -1,15 +1,1 @@
-// Lightweight runtime guards for older browsers.
-(function () {
-  if (!window.requestIdleCallback) {
-    window.requestIdleCallback = function (cb) {
-      return setTimeout(function () {
-        cb({ didTimeout: false, timeRemaining: function () { return 0; } });
-      }, 1);
-    };
-  }
-  if (!window.cancelIdleCallback) {
-    window.cancelIdleCallback = function (id) {
-      clearTimeout(id);
-    };
-  }
-})();
+window.requestIdleCallback||(window.requestIdleCallback=function(e){return setTimeout(function(){e({didTimeout:!1,timeRemaining:function(){return 0}})},1)}),window.cancelIdleCallback||(window.cancelIdleCallback=function(e){clearTimeout(e)});

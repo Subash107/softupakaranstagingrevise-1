@@ -1,9 +1,1 @@
-// Optional admin link override for demos (e.g., ?admin=1).
-(function () {
-  var link = document.getElementById("adminLink");
-  if (!link || !window.URLSearchParams) return;
-  var params = new URLSearchParams(window.location.search);
-  if (params.get("admin") === "1") {
-    link.style.display = "";
-  }
-})();
+!function(){var a=document.getElementById("adminLink");a&&window.URLSearchParams&&("1"===new URLSearchParams(window.location.search).get("admin")&&(a.style.display=""))}();
