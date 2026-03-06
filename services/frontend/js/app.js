@@ -1804,23 +1804,27 @@ async function init(){
   languageSelector.init();
   const heroTask = prepareHeroSlider().catch(() => {});
   refreshCatalogUi();
-  const settingsTask = loadPublicSettings().catch(() => {});
+  const settingsTask = scheduleIdleTask(() => loadPublicSettings().catch(() => {}), 1200);
   const testimonialsTask = scheduleIdleTask(() => loadTestimonials().catch(() => {}), 1800);
   const blogTask = scheduleIdleTask(() => loadAndRenderBlog().catch(() => {}), 2200);
-  const catalogTask = loadCatalogFromApi()
-    .then((loaded) => {
-      if (loaded) {
-        refreshCatalogUi();
-        return true;
-      }
-      return loadCatalogFromIlmStore()
-        .then((ok) => {
-          if (ok) refreshCatalogUi();
-          return ok;
+  const catalogTask = scheduleIdleTask(
+    () =>
+      loadCatalogFromApi()
+        .then((loaded) => {
+          if (loaded) {
+            refreshCatalogUi();
+            return true;
+          }
+          return loadCatalogFromIlmStore()
+            .then((ok) => {
+              if (ok) refreshCatalogUi();
+              return ok;
+            })
+            .catch(() => false);
         })
-        .catch(() => false);
-    })
-    .catch(() => false);
+        .catch(() => false),
+    2400
+  );
 
   buildCartModal();
   wirePayModal();
@@ -1961,11 +1965,21 @@ function initializeHeroSlider() {
   let current = 0;
   let timer;
   const AUTO_DELAY = 4800;
+  const connection =
+    typeof navigator !== "undefined" && navigator.connection ? navigator.connection : null;
+  const slowConnection = !!(
+    connection &&
+    (connection.saveData ||
+      connection.effectiveType === "slow-2g" ||
+      connection.effectiveType === "2g" ||
+      connection.effectiveType === "3g")
+  );
   const lowPowerDevice =
+    slowConnection ||
     (typeof navigator !== "undefined" && Number(navigator.hardwareConcurrency || 0) > 0 && navigator.hardwareConcurrency <= 4) ||
     (typeof navigator !== "undefined" && Number(navigator.deviceMemory || 0) > 0 && navigator.deviceMemory <= 4);
-  const HERO_TILE_TARGET_PX = lowPowerDevice ? 38 : 24;
-  const HERO_TILE_MAX = lowPowerDevice ? 320 : 760;
+  const HERO_TILE_TARGET_PX = lowPowerDevice ? 64 : 40;
+  const HERO_TILE_MAX = lowPowerDevice ? 90 : 220;
   let tileResizeTimer;
   let tileAnimationCompleteTimer;
   let lastSlideExposure = { index: null, timestamp: Date.now() };
@@ -2214,16 +2228,23 @@ function initializeHeroSlider() {
     slider.classList.remove("heroSlider--parallax-active");
   };
 
-  const setActiveSlide = (value) => {
+  const setActiveSlide = (value, renderTiles = true) => {
     current = normalizeIndex(value);
     track.style.transform = `translateX(-${current * 100}%)`;
     slides.forEach((slide, idx) => {
       slide.setAttribute("data-active", idx === current ? "1" : "0");
-      if (idx !== current) slide.classList.remove("heroSlide--cta-visible");
+      if (idx !== current) {
+        slide.classList.remove("heroSlide--cta-visible");
+        // Keep DOM light: remove tile fragments from inactive slides.
+        const tileHost = slide.querySelector("[data-hero-tiles]");
+        if (tileHost && tileHost.childElementCount) {
+          tileHost.innerHTML = "";
+        }
+      }
     });
     updateDots();
     trackSlideExposure(current);
-    refreshHeroTiles();
+    if (renderTiles) refreshHeroTiles();
   };
 
   const scheduleNext = () => {
@@ -2264,7 +2285,13 @@ function initializeHeroSlider() {
   slider.addEventListener("pointerup", resetParallax);
   window.addEventListener("resize", scheduleTileRefresh);
 
-  setActiveSlide(0);
+  setActiveSlide(0, false);
+  const bootInitialTiles = () => refreshHeroTiles();
+  if ("requestIdleCallback" in window) {
+    window.requestIdleCallback(bootInitialTiles, { timeout: 900 });
+  } else {
+    window.setTimeout(bootInitialTiles, 220);
+  }
   scheduleNext();
 }
 
