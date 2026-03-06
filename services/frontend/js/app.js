@@ -1969,15 +1969,31 @@ function initializeHeroSlider() {
   let tileResizeTimer;
   let tileAnimationCompleteTimer;
   let lastSlideExposure = { index: null, timestamp: Date.now() };
-  const MOTION_PREF_KEY = "SPK_HERO_MOTION_REDUCED";
+  const MOTION_PREF_KEY = "SPK_HERO_MOTION_PREF_V2";
+  const LEGACY_MOTION_PREF_KEY = "SPK_HERO_MOTION_REDUCED";
   const motionMedia = typeof window !== "undefined" && window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
-  let motionReduced = (function () {
+  const readStoredMotionPref = () => {
     try {
       const stored = localStorage.getItem(MOTION_PREF_KEY);
-      if (stored !== null) return stored === "1" || stored === "true";
+      if (stored === null) return null;
+      return stored === "1" || stored === "true";
+    } catch (_) {
+      return null;
+    }
+  };
+  const clearLegacyMotionPref = () => {
+    try {
+      localStorage.removeItem(LEGACY_MOTION_PREF_KEY);
     } catch (_) {
       /* ignore */
     }
+  };
+  const storedMotionPref = readStoredMotionPref();
+  if (storedMotionPref === null) {
+    clearLegacyMotionPref();
+  }
+  let motionReduced = (function () {
+    if (storedMotionPref !== null) return storedMotionPref;
     return motionMedia ? motionMedia.matches : false;
   })();
   const motionToggle = slider.querySelector("[data-motion-toggle]");
@@ -2024,11 +2040,14 @@ function initializeHeroSlider() {
     dots.querySelectorAll(".heroDot").forEach((dot, idx) => dot.classList.toggle("active", idx === current));
   };
 
-  const setMotionReduced = (value) => {
+  const setMotionReduced = (value, persist = false) => {
     motionReduced = !!value;
-    try {
-      localStorage.setItem(MOTION_PREF_KEY, motionReduced ? "1" : "0");
-    } catch (_) {}
+    if (persist) {
+      try {
+        localStorage.setItem(MOTION_PREF_KEY, motionReduced ? "1" : "0");
+      } catch (_) {}
+      clearLegacyMotionPref();
+    }
     slider.classList.toggle("heroSlider--reduced-motion", motionReduced);
     if (motionToggle) {
       motionToggle.textContent = motionReduced ? "Restore motion" : "Reduce motion";
@@ -2043,24 +2062,22 @@ function initializeHeroSlider() {
   if (motionControl) {
     motionControl.dataset.motionReduced = motionReduced ? "1" : "0";
   }
-  setMotionReduced(motionReduced);
+  setMotionReduced(motionReduced, false);
 
   if (motionToggle) {
     motionToggle.addEventListener("click", () => {
-      setMotionReduced(!motionReduced);
+      setMotionReduced(!motionReduced, true);
       refreshHeroTiles();
       scheduleNext();
     });
   }
   if (motionMedia && typeof motionMedia.addEventListener === "function") {
     motionMedia.addEventListener("change", (event) => {
-      try {
-        const stored = localStorage.getItem(MOTION_PREF_KEY);
-        if (stored === null) {
-          setMotionReduced(event.matches);
-          refreshHeroTiles();
-        }
-      } catch (_) {}
+      const stored = readStoredMotionPref();
+      if (stored === null) {
+        setMotionReduced(event.matches, false);
+        refreshHeroTiles();
+      }
     });
   }
 
