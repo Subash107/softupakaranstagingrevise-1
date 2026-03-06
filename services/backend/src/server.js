@@ -2187,6 +2187,15 @@ app.post("/api/orders", (req, res) => {
     lineTotal: parseInteger(item.lineTotal, null),
   }));
   const quantity = safeItems.reduce((sum, item) => sum + item.qty, 0);
+  const subtotalNpr = parseInteger(body.subtotalNpr ?? body.subtotal, null);
+  const discountNpr = clampNumber(
+    parseInteger(body.discountNpr ?? body.discount, 0),
+    0,
+    Number.MAX_SAFE_INTEGER,
+    0
+  );
+  const rawCouponCode = sanitizeString(body.couponCode).toUpperCase();
+  const couponCode = rawCouponCode && discountNpr > 0 ? rawCouponCode : null;
   const totalNpr = parseInteger(body.totalNpr ?? body.total, null);
   const paymentMethod = sanitizeString(body.paymentMethod ?? body.method);
   const statusValue = sanitizeString(body.status) || "created";
@@ -2203,13 +2212,16 @@ app.post("/api/orders", (req, res) => {
       game_uid,
       product_id,
       quantity,
+      subtotal_npr,
+      discount_npr,
+      coupon_code,
       total_npr,
       payment_method,
       status,
       whatsapp,
       raw_cart_json,
       source
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const params = [
@@ -2217,6 +2229,9 @@ app.post("/api/orders", (req, res) => {
     gameUid || null,
     productId || null,
     quantity,
+    subtotalNpr,
+    discountNpr,
+    couponCode,
     totalNpr,
     paymentMethod || null,
     statusValue,
@@ -2239,6 +2254,9 @@ app.post("/api/orders", (req, res) => {
       created_at: new Date().toISOString(),
       trace,
       totals: {
+        subtotal_npr: subtotalNpr,
+        discount_npr: discountNpr,
+        coupon_code: couponCode,
         total_npr: totalNpr,
         items: safeItems.length,
         quantity,
@@ -2252,6 +2270,7 @@ app.post("/api/orders", (req, res) => {
         customer_name: customerName,
         game_uid: gameUid,
         product_id: productId,
+        coupon_code: couponCode,
         raw_request: body,
       },
     };
@@ -2273,7 +2292,33 @@ app.get("/api/orders", adminRequired, (req, res) => {
       console.error("Failed to load orders:", err.message);
       return res.status(500).json({ error: "Failed to load orders" });
     }
-    res.json(rows);
+    const normalizedRows = (rows || []).map((row) => {
+      let rawPayload = null;
+      try {
+        rawPayload = row.raw_cart_json ? JSON.parse(row.raw_cart_json) : null;
+      } catch (_) {
+        rawPayload = null;
+      }
+      const payloadSubtotal = parseInteger(rawPayload?.subtotalNpr ?? rawPayload?.subtotal, null);
+      const payloadDiscount = clampNumber(
+        parseInteger(rawPayload?.discountNpr ?? rawPayload?.discount, 0),
+        0,
+        Number.MAX_SAFE_INTEGER,
+        0
+      );
+      const payloadCoupon = sanitizeString(rawPayload?.couponCode).toUpperCase();
+      const rowCoupon = sanitizeString(row.coupon_code).toUpperCase();
+      const subtotal = row.subtotal_npr ?? payloadSubtotal;
+      const discount = row.discount_npr ?? payloadDiscount;
+      const coupon = rowCoupon || payloadCoupon || null;
+      return {
+        ...row,
+        subtotal_npr: subtotal,
+        discount_npr: discount,
+        coupon_code: coupon,
+      };
+    });
+    res.json(normalizedRows);
   });
 });
 
