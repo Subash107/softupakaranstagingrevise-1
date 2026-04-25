@@ -24,9 +24,9 @@ docker compose up -d --build
 ```
 
 Main URLs:
-- Frontend: `http://localhost:8080`
-- Backend API: `http://localhost:4000`
-- Django Admin service: `http://localhost:8000`
+- Frontend: ``
+- Backend API: ``
+- Django Admin service: `
 
 ## Development Notes
 
