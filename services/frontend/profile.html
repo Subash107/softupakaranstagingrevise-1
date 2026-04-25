@@ -27,6 +27,17 @@
     .ok{color:#7CFFB2}
     .bad{color:#FF7C7C}
     pre{margin:10px 0 0;padding:12px;border-radius:14px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08);overflow:auto}
+    .orderCard{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 16px;margin-bottom:10px}
+    .orderCard:last-child{margin-bottom:0}
+    .orderMeta{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px;opacity:.7;margin-top:6px}
+    .orderItems{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+    .orderItem{font-size:14px;display:flex;justify-content:space-between;gap:12px}
+    .statusBadge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700;text-transform:capitalize}
+    .statusBadge.created{background:rgba(255,200,50,.15);color:#FFC832}
+    .statusBadge.paid{background:rgba(124,255,178,.15);color:#7CFFB2}
+    .statusBadge.delivered{background:rgba(124,255,178,.2);color:#7CFFB2}
+    .statusBadge.cancelled{background:rgba(255,124,124,.15);color:#FF7C7C}
+    .ordersDivider{border:none;border-top:1px solid rgba(255,255,255,.08);margin:18px 0}
   </style>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -117,10 +128,21 @@
         <div id="regMsg" class="msg"></div>
       </section>
     </div>
+    <!-- Order History (shown only when signed in) -->
+    <div id="orderHistorySection" style="display:none;margin-top:18px">
+      <hr class="ordersDivider">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <h2 style="margin:0;font-size:20px;font-weight:800">Order History</h2>
+        <button id="btnRefreshOrders" class="btn" type="button" style="font-size:13px;padding:6px 14px">Refresh</button>
+      </div>
+      <div id="ordersLoading" class="muted" style="display:none">Loading orders&hellip;</div>
+      <div id="ordersList"></div>
+      <div id="ordersMsg" class="msg muted"></div>
+    </div>
   </main>
 
   <!-- Shared scripts -->
-  <script src="js/app.js?v=20260306t"></script>
+  <script src="js/app.js?v=20260424e"></script>
   <script src="js/auth-gate.js?v=20260305g"></script>
   <script src="js/auth.js?v=20260305g"></script>
 
@@ -175,10 +197,12 @@
       // Hide raw JSON box (marked) after sign-in; allow debug=1 to see it.
       if(meBox) meBox.style.display = (isAuthed && isDebug) ? 'block' : 'none';
       if(feedbackPanel) feedbackPanel.style.display = isAuthed ? '' : 'none';
+      if(orderHistorySection) orderHistorySection.style.display = isAuthed ? '' : 'none';
       if(isAuthed){
         renderMeDetails(me);
       }else{
         renderMeDetails(null);
+        if(ordersList) ordersList.innerHTML = '';
       }
     }
 
@@ -210,6 +234,7 @@
         // Keep raw JSON for debug only
         meBox.textContent = JSON.stringify(me, null, 2);
         setAuthedUI(true, me);
+        loadOrders();
       }catch(e){
         currentMe = null;
         meBox.textContent = '';
@@ -264,6 +289,69 @@
         btn.disabled = false;
       }
     }
+
+    const orderHistorySection = document.getElementById('orderHistorySection');
+    const ordersList = document.getElementById('ordersList');
+    const ordersLoading = document.getElementById('ordersLoading');
+    const ordersMsg = document.getElementById('ordersMsg');
+
+    function fmtNpr(n){ return n != null ? 'Rs ' + Number(n).toLocaleString() : '—'; }
+    function fmtDate(s){ try{ return new Date(s).toLocaleString('en-NP',{dateStyle:'medium',timeStyle:'short'}); }catch(_){ return s||'—'; } }
+    function statusBadge(s){
+      const cls = ['created','paid','delivered','cancelled'].includes(s) ? s : 'created';
+      return `<span class="statusBadge ${cls}">${escapeHtml(s||'created')}</span>`;
+    }
+
+    function renderOrders(orders){
+      if(!orders.length){
+        ordersList.innerHTML = '<div class="muted" style="padding:12px 0">No orders yet. Place your first order!</div>';
+        return;
+      }
+      ordersList.innerHTML = orders.map(o => {
+        const items = Array.isArray(o.items) && o.items.length
+          ? o.items.map(it => `<div class="orderItem"><span>${escapeHtml(it.name||it.id||'Item')}</span><span class="muted">×${it.qty||1}</span></div>`).join('')
+          : `<div class="orderItem muted">${escapeHtml(o.product_id||'—')}</div>`;
+        const discount = o.discount_npr > 0
+          ? `<span>Discount: ${fmtNpr(o.discount_npr)}${o.coupon_code ? ' ('+escapeHtml(o.coupon_code)+')' : ''}</span>` : '';
+        return `
+          <div class="orderCard">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+              <div style="font-weight:700;font-size:15px">Order #${escapeHtml(String(o.id))}</div>
+              ${statusBadge(o.status)}
+            </div>
+            <div class="orderItems">${items}</div>
+            <div class="orderMeta">
+              <span>${fmtDate(o.created_at)}</span>
+              ${discount}
+              <span>Total: <strong>${fmtNpr(o.total_npr)}</strong></span>
+              ${o.payment_method ? `<span>Payment: ${escapeHtml(o.payment_method)}</span>` : ''}
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    async function loadOrders(){
+      if(!currentMe) return;
+      ordersLoading.style.display = '';
+      ordersList.innerHTML = '';
+      ordersMsg.textContent = '';
+      try{
+        const token = Auth.getStoredToken ? Auth.getStoredToken() : (localStorage.getItem('token')||'');
+        const headers = {'Content-Type':'application/json'};
+        if(token && token !== 'local-google') headers['Authorization'] = 'Bearer ' + token;
+        const res = await fetch(Auth.getApiBase() + '/api/my-orders', { credentials:'include', headers });
+        if(!res.ok) throw new Error('Failed to load orders');
+        const orders = await res.json();
+        renderOrders(orders);
+      }catch(e){
+        ordersMsg.textContent = 'Could not load orders: ' + (e.message||e);
+        ordersMsg.className = 'msg bad';
+      }finally{
+        ordersLoading.style.display = 'none';
+      }
+    }
+
+    document.getElementById('btnRefreshOrders')?.addEventListener('click', loadOrders);
 
     // Feedback button
     document.getElementById('btnSendFeedback')?.addEventListener('click', submitFeedback);

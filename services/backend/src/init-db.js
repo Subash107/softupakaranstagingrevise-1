@@ -136,6 +136,7 @@ function initDb() {
     ensureColumn("orders", "subtotal_npr", "INTEGER");
     ensureColumn("orders", "discount_npr", "INTEGER");
     ensureColumn("orders", "coupon_code", "TEXT");
+    ensureColumn("orders", "user_id", "INTEGER");
     ensureColumn("products", "price_usd", "INTEGER");
     ensureColumn("products", "tier", "TEXT");
     ensureColumn("products", "availability", "TEXT");

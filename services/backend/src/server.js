@@ -53,6 +53,23 @@ const REGION_DISPLAY_NAMES =
 // Ensure correct protocol/host when behind a proxy (Render, etc.)
 app.set("trust proxy", 1);
 
+// Security: Disable X-Powered-By header to prevent info disclosure
+app.disable("x-powered-by");
+
+// Security headers — must be registered before any route so every response gets them
+app.use((_req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("X-XSS-Protection", "1; mode=block");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
+  res.setHeader("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'");
+  if (process.env.NODE_ENV === "production") {
+    res.setHeader("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+  }
+  next();
+});
+
 // healthcheck
 app.get("/healthz", (req, res) => res.json({ status: "ok" }));
 const FRONTEND_URL = process.env.FRONTEND_URL || "https://lamasubash107.gitlab.io/softupakaran/";
@@ -169,11 +186,11 @@ const corsOptions = {
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Admin-Token"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 };
 app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: "50kb" }));
 
 function sanitizeString(value = "") {
   return typeof value === "string" ? value.trim() : "";
@@ -371,6 +388,16 @@ fs.mkdirSync(LOG_DIR, { recursive: true });
 // `dbPath` is already defined near the top of this file (initialized before loading ./db)
 // Reuse that variable instead of redeclaring it here.
 
+// Allowlist of safe image MIME types — blocks executables, HTML, scripts, SVG
+const ALLOWED_IMAGE_MIMES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const imageFileFilter = (_req, file, cb) => {
+  if (ALLOWED_IMAGE_MIMES.has(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(Object.assign(new Error("Only JPEG, PNG, WebP or GIF images are allowed"), { status: 415 }), false);
+  }
+};
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
   filename: (req, file, cb) => {
@@ -380,7 +407,8 @@ const storage = multer.diskStorage({
 });
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: imageFileFilter,
 });
 // Product image uploads
 const productStorage = multer.diskStorage({
@@ -392,7 +420,8 @@ const productStorage = multer.diskStorage({
 });
 const uploadProductImage = multer({
   storage: productStorage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: imageFileFilter,
 });
 
 
@@ -494,35 +523,55 @@ function hashToken(value = "") {
   return crypto.createHash("sha256").update(String(value || "")).digest("hex");
 }
 
+// Timing-safe string comparison — prevents timing-based secret extraction
+function secureCompare(a, b) {
+  if (!a || !b) return false;
+  const ha = crypto.createHmac("sha256", "spk_cmp").update(String(a)).digest();
+  const hb = crypto.createHmac("sha256", "spk_cmp").update(String(b)).digest();
+  return crypto.timingSafeEqual(ha, hb);
+}
+
+// O(1) in-memory revoked JTI cache — checked before hitting the DB
+// Cleared every 30 min; short-lived access tokens expire anyway
+const revokedJtiCache = new Set();
+setInterval(() => revokedJtiCache.clear(), 30 * 60 * 1000).unref();
+
 const authRateLimitStore = new Map();
 
-function cleanupAuthRateLimitStore(now) {
+// Sliding-window rate limiter — more accurate than fixed-window; immune to
+// boundary-burst attacks. Each key stores a sorted array of hit timestamps.
+// Hits older than windowMs are pruned on every check → O(maxRequests) per key.
+function cleanupAuthRateLimitStore(now, windowMs) {
   if (authRateLimitStore.size < 2000) return;
-  for (const [key, state] of authRateLimitStore.entries()) {
-    if (!state || state.resetAt <= now) authRateLimitStore.delete(key);
+  for (const [key, hits] of authRateLimitStore.entries()) {
+    if (!hits.length || hits[hits.length - 1] < now - windowMs) {
+      authRateLimitStore.delete(key);
+    }
   }
 }
 
 function createAuthRateLimiter(label, maxRequests, windowMs) {
   return (req, res, next) => {
     const now = Date.now();
-    cleanupAuthRateLimitStore(now);
+    cleanupAuthRateLimitStore(now, windowMs);
     const ip = String(req.ip || "unknown");
     const key = `${label}:${ip}`;
-    const existing = authRateLimitStore.get(key);
-    if (!existing || existing.resetAt <= now) {
-      authRateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
-      return next();
-    }
-    existing.count += 1;
-    if (existing.count > maxRequests) {
-      const retryAfter = Math.max(1, Math.ceil((existing.resetAt - now) / 1000));
+    const hits = authRateLimitStore.get(key) || [];
+    const windowStart = now - windowMs;
+    // Drop timestamps outside the sliding window
+    const recent = hits.filter((t) => t > windowStart);
+    if (recent.length >= maxRequests) {
+      // Retry after the oldest hit in the window falls out
+      const retryAfter = Math.max(1, Math.ceil((recent[0] + windowMs - now) / 1000));
       res.setHeader("Retry-After", String(retryAfter));
+      authRateLimitStore.set(key, recent);
       return res.status(429).json({
-        error: "Too many auth requests. Please try again shortly.",
+        error: "Too many requests. Please try again shortly.",
         retry_after_seconds: retryAfter,
       });
     }
+    recent.push(now);
+    authRateLimitStore.set(key, recent);
     return next();
   };
 }
@@ -531,6 +580,16 @@ const authLoginRateLimit = createAuthRateLimiter("auth_login", AUTH_RATE_LIMIT_L
 const authRegisterRateLimit = createAuthRateLimiter("auth_register", AUTH_RATE_LIMIT_REGISTER_MAX, AUTH_RATE_LIMIT_WINDOW_MS);
 const authGoogleRateLimit = createAuthRateLimiter("auth_google", AUTH_RATE_LIMIT_GOOGLE_MAX, AUTH_RATE_LIMIT_WINDOW_MS);
 const authRefreshRateLimit = createAuthRateLimiter("auth_refresh", AUTH_RATE_LIMIT_REFRESH_MAX, AUTH_RATE_LIMIT_WINDOW_MS);
+
+// Rate limiting for admin operations (30 requests per minute per IP)
+const ADMIN_OPERATION_RATE_LIMIT_WINDOW_MS = parseDurationToMs(process.env.ADMIN_OPERATION_RATE_LIMIT_WINDOW || "1m", 60 * 1000);
+const ADMIN_OPERATION_RATE_LIMIT_MAX = parsePositiveInt(process.env.ADMIN_OPERATION_RATE_LIMIT_MAX, 30);
+const adminOperationRateLimit = createAuthRateLimiter("admin_op", ADMIN_OPERATION_RATE_LIMIT_MAX, ADMIN_OPERATION_RATE_LIMIT_WINDOW_MS);
+
+// Rate limits for public-facing write endpoints (previously unprotected)
+const chatRateLimit     = createAuthRateLimiter("chat",     20,  60 * 1000); // 20/min
+const ordersRateLimit   = createAuthRateLimiter("orders",   10,  60 * 1000); // 10/min
+const feedbackRateLimit = createAuthRateLimiter("feedback",  5,  60 * 1000); //  5/min
 
 function normalizeClientIp(req) {
   return String(req.ip || req.headers["x-forwarded-for"] || "unknown")
@@ -775,22 +834,18 @@ function clearSession(res) {
   res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, clearOptions);
 }
 
-function getAdminToken(req) {
-  return req.query.token || req.headers["x-admin-token"];
-}
-function hasLegacyAdminToken(req) {
-  const expected = process.env.ADMIN_TOKEN;
-  if (!expected) return false;
-  return getAdminToken(req) === expected;
-}
+const JWT_VERIFY_OPTS = { algorithms: ["HS256"] };
 
 function authOptional(req, _res, next) {
   const token = getAccessToken(req);
   if (!token) return next();
   try {
-    req.user = jwt.verify(token, JWT_SECRET);
+    const payload = jwt.verify(token, JWT_SECRET, JWT_VERIFY_OPTS);
+    // Fast O(1) revocation check before touching the DB
+    if (payload.jti && revokedJtiCache.has(payload.jti)) return next();
+    req.user = payload;
   } catch (_) {
-    // ignore invalid token
+    // ignore invalid token — optional auth
   }
   next();
 }
@@ -799,7 +854,11 @@ function authRequired(req, res, next) {
   const token = getAccessToken(req);
   if (!token) return res.status(401).json({ error: "Missing token" });
   try {
-    req.user = jwt.verify(token, JWT_SECRET);
+    const payload = jwt.verify(token, JWT_SECRET, JWT_VERIFY_OPTS);
+    if (payload.jti && revokedJtiCache.has(payload.jti)) {
+      return res.status(401).json({ error: "Token revoked" });
+    }
+    req.user = payload;
     next();
   } catch (_) {
     return res.status(401).json({ error: "Invalid token" });
@@ -807,16 +866,15 @@ function authRequired(req, res, next) {
 }
 
 async function adminRequired(req, res, next) {
-  const totpEnabled = !!(await getAdminTotpSecret().catch(() => ""));
-  if (hasLegacyAdminToken(req)) {
-    if (totpEnabled) return res.status(401).json({ error: "2FA required" });
-    return next();
-  }
   const token = getAccessToken(req);
   if (!token) return res.status(401).json({ error: "Unauthorized" });
   try {
-    const payload = jwt.verify(token, JWT_SECRET);
+    const payload = jwt.verify(token, JWT_SECRET, JWT_VERIFY_OPTS);
+    if (payload.jti && revokedJtiCache.has(payload.jti)) {
+      return res.status(401).json({ error: "Token revoked" });
+    }
     if (payload.role !== "admin") return res.status(403).json({ error: "Admin only" });
+    const totpEnabled = !!(await getAdminTotpSecret().catch(() => ""));
     if (totpEnabled && payload.totp !== true) {
       return res.status(401).json({ error: "2FA required" });
     }
@@ -829,8 +887,9 @@ async function adminRequired(req, res, next) {
 
 function backupAllowed(req) {
   if (!BACKUP_TOKEN) return false;
-  const token = req.headers["x-backup-token"] || req.query.backup_token || "";
-  return token && token === BACKUP_TOKEN;
+  const token = String(req.headers["x-backup-token"] || req.query.backup_token || "");
+  if (!token) return false;
+  return secureCompare(token, BACKUP_TOKEN);
 }
 
 function backupAuth(req, res, next) {
@@ -915,7 +974,7 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-app.post("/api/chat/", async (req, res) => {
+app.post("/api/chat/", chatRateLimit, async (req, res) => {
   const prompt = sanitizeString((req.body && req.body.message) || "");
   if (!prompt) {
     return res.status(400).json({ error: "Message is required" });
@@ -965,7 +1024,7 @@ app.post("/api/auth/register", authRegisterRateLimit, async (req, res) => {
 });
 
 // ---------- admin: create users ----------
-app.post("/api/admin/users", adminRequired, async (req, res) => {
+app.post("/api/admin/users", adminRequired, adminOperationRateLimit, async (req, res) => {
   const { name, email, password, phone, whatsapp, role } = req.body || {};
   const cleanEmail = sanitizeEmail(email);
   const cleanPassword = typeof password === "string" ? password.trim() : "";
@@ -1262,7 +1321,7 @@ async function proxyIlm(req, res, path) {
     const text = await r.text();
     res.status(r.status).type(r.headers.get("content-type") || "application/json").send(text);
   } catch (err) {
-    res.status(502).json({ error: "ILM proxy failed", detail: err.message });
+    res.status(502).json({ error: "Catalog proxy temporarily unavailable. Please try again." });
   } finally {
     clearTimeout(timeout);
   }
@@ -1283,7 +1342,7 @@ app.post("/api/admin/backup", backupAuth, async (_req, res) => {
     const info = await uploadBackupToDrive(dbPath);
     res.json({ ok: true, file: info });
   } catch (err) {
-    res.status(500).json({ error: "Backup failed", detail: err.message });
+    res.status(500).json({ error: "Backup failed. Check server logs for details." });
   }
 });
 
@@ -1338,12 +1397,12 @@ app.post("/api/admin/backups/run", backupAuth, async (_req, res) => {
     });
   } catch (err) {
     console.error("Backup runner failed:", err.message);
-    res.status(500).json({ error: "Backup command failed", detail: err.message });
+    res.status(500).json({ error: "Backup command failed. Check server logs for details." });
   }
 });
 
 // ---------- feedback ----------
-app.post("/api/feedback", authOptional, async (req, res) => {
+app.post("/api/feedback", feedbackRateLimit, authOptional, async (req, res) => {
   const { name, email, rating, message } = req.body || {};
   const cleanMessage = sanitizeString(message);
   const ratingValue = normalizeRating(rating);
@@ -1417,7 +1476,7 @@ app.post("/api/ai-chat", async (req, res) => {
     res.json({ answer });
   } catch (err) {
     console.error("AI chat failed:", err.message);
-    res.status(502).json({ error: "AI assistant failed", detail: err.message });
+    res.status(502).json({ error: "AI assistant temporarily unavailable. Please try again." });
   }
 });
 
@@ -1609,7 +1668,7 @@ app.get("/api/admin/categories", adminRequired, async (_req, res) => {
   }
 });
 
-app.post("/api/admin/categories", adminRequired, express.json(), async (req, res) => {
+app.post("/api/admin/categories", adminRequired, adminOperationRateLimit, express.json(), async (req, res) => {
   const body = req.body || {};
   const id = String(body.id || "").trim();
   const name = String(body.name || "").trim();
@@ -1871,7 +1930,7 @@ app.get("/api/admin/products", adminRequired, (req, res) => {
   });
 });
 
-app.post("/api/admin/products", adminRequired, express.json(), (req, res) => {
+app.post("/api/admin/products", adminRequired, adminOperationRateLimit, express.json(), (req, res) => {
   const body = req.body || {};
   const id = (body.id && String(body.id).trim()) ? String(body.id).trim() : `p${Date.now().toString(36)}`;
   const name = String(body.name || "").trim();
@@ -1960,7 +2019,7 @@ app.get("/api/admin/blog-posts", adminRequired, async (req, res) => {
   }
 });
 
-app.post("/api/admin/blog-posts", adminRequired, express.json(), async (req, res) => {
+app.post("/api/admin/blog-posts", adminRequired, adminOperationRateLimit, express.json(), async (req, res) => {
   const body = req.body || {};
   const title = sanitizeString(body.title);
   if (!title) return res.status(400).json({ error: "Title is required" });
@@ -2060,7 +2119,7 @@ app.get("/api/admin/slider-banners", adminRequired, async (req, res) => {
   }
 });
 
-app.post("/api/admin/slider-banners", adminRequired, express.json(), async (req, res) => {
+app.post("/api/admin/slider-banners", adminRequired, adminOperationRateLimit, express.json(), async (req, res) => {
   const body = req.body || {};
   const title = sanitizeString(body.title);
   if (!title) return res.status(400).json({ error: "Title is required" });
@@ -2176,7 +2235,7 @@ app.delete("/api/admin/blog-posts/:id", adminRequired, async (req, res) => {
 
 
 // ---------- orders ----------
-app.post("/api/orders", (req, res) => {
+app.post("/api/orders", ordersRateLimit, authOptional, (req, res) => {
   const body = req.body || {};
   const rawItems = Array.isArray(body.items) ? body.items : [];
   if (!rawItems.length) return res.status(400).json({ error: "Order items are required" });
@@ -2205,6 +2264,7 @@ app.post("/api/orders", (req, res) => {
   const gameUid = sanitizeString(body.gameUid);
   const whatsapp = sanitizeString(body.whatsapp);
   const productId = safeItems[0]?.id || sanitizeString(body.productId);
+  const userId = req.user?.id || null;
 
   const sql = `
     INSERT INTO orders (
@@ -2220,8 +2280,9 @@ app.post("/api/orders", (req, res) => {
       status,
       whatsapp,
       raw_cart_json,
-      source
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      source,
+      user_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const params = [
@@ -2242,6 +2303,7 @@ app.post("/api/orders", (req, res) => {
       trace,
     }),
     source,
+    userId,
   ];
 
   db.run(sql, params, function (err) {
@@ -2285,7 +2347,6 @@ app.post("/api/orders", (req, res) => {
   });
 });
 
-// Legacy admin token still supported; also supports admin JWT now.
 app.get("/api/orders", adminRequired, (req, res) => {
   db.all("SELECT * FROM orders ORDER BY created_at DESC LIMIT 200", (err, rows) => {
     if (err) {
@@ -2323,6 +2384,41 @@ app.get("/api/orders", adminRequired, (req, res) => {
 });
 
 
+
+app.get("/api/my-orders", authRequired, (req, res) => {
+  db.all(
+    "SELECT id, created_at, customer_name, product_id, quantity, subtotal_npr, discount_npr, coupon_code, total_npr, payment_method, status, raw_cart_json FROM orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 100",
+    [req.user.id],
+    (err, rows) => {
+      if (err) {
+        console.error("Failed to load user orders:", err.message);
+        return res.status(500).json({ error: "Failed to load orders" });
+      }
+      const result = (rows || []).map((row) => {
+        let items = [];
+        try {
+          const parsed = row.raw_cart_json ? JSON.parse(row.raw_cart_json) : null;
+          if (Array.isArray(parsed?.items)) items = parsed.items;
+        } catch (_) {}
+        return {
+          id: row.id,
+          created_at: row.created_at,
+          customer_name: row.customer_name,
+          product_id: row.product_id,
+          quantity: row.quantity,
+          subtotal_npr: row.subtotal_npr,
+          discount_npr: row.discount_npr,
+          coupon_code: row.coupon_code,
+          total_npr: row.total_npr,
+          payment_method: row.payment_method,
+          status: row.status,
+          items,
+        };
+      });
+      res.json(result);
+    }
+  );
+});
 
 // ---------- Google sign-in ----------
 // Accepts Google credential JWT (from GIS) and verifies signature + issuer (+ audience when configured).
@@ -2377,9 +2473,23 @@ app.post("/api/auth/google", authGoogleRateLimit, async (req, res) => {
   }
 });
 
+// Global error handler — catches multer MIME rejections and any unhandled errors
+// Never expose stack traces or internal error messages to clients
+app.use((err, _req, res, _next) => {
+  const status = err.status || (err.name === "MulterError" ? 400 : 500);
+  const message =
+    err.status === 415
+      ? err.message  // file type rejection — safe to forward
+      : status < 500
+        ? err.message || "Bad request"
+        : "Internal server error";
+  console.error("[unhandled]", err.message || err);
+  res.status(status).json({ error: message });
+});
+
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log("dYs? SoftUpakaran API running on http://localhost:" + PORT);
+    console.log("🚀 SoftUpakaran API running on http://localhost:" + PORT);
   });
 }
 

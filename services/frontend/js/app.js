@@ -79,7 +79,8 @@ const CATEGORY_ORDER = [
   "wp-themes",
   "ecommerce",
   "vpn",
-  "web-development"
+  "web-development",
+  "judas-priest"
 ];
 
 const CATEGORY_NOTES = {
@@ -95,7 +96,8 @@ const CATEGORY_NOTES = {
   "wp-themes": "Themes ready for news, blogs, and shops.",
   "ecommerce": "WooCommerce-ready templates and bundles.",
   "vpn": "VPN services for private browsing and streaming.",
-  "web-development": "Turnkey web development toolkits."
+  "web-development": "Turnkey web development toolkits.",
+  "judas-priest": "Official Judas Priest band merchandise – tees, hoodies, jackets & accessories."
 };
 
 const ILM_CATEGORY_SLUG_MAP = {
@@ -119,7 +121,8 @@ const DEFAULT_CATEGORIES = [
   { id:"wp-themes", name:"WP Themes", tag:"Blog, news, and shop themes", icon:"TH" },
   { id:"ecommerce", name:"eCommerce", tag:"WooCommerce-ready package", icon:"EC" },
   { id:"vpn", name:"VPN", tag:"Secure browsing plans", icon:"VPN" },
-  { id:"web-development", name:"Web Development", tag:"Custom website builds", icon:"WEB" }
+  { id:"web-development", name:"Web Development", tag:"Custom website builds", icon:"WEB" },
+  { id:"judas-priest", name:"Judas Priest Collection", tag:"Official band merchandise", icon:"🤘" }
 ];
 
 const CATEGORY_LINKS = {
@@ -210,7 +213,29 @@ const DEFAULT_PRODUCTS = [
     price: 650,
     img: "https://images.unsplash.com/photo-1513258496099-48168024aec0?auto=format&fit=crop&w=900&q=80",
     note: "Nepal payment · Quick delivery"
-  }
+  },
+  { id: "jp-british-steel-white-tee", name: "British Steel White T-Shirt", category: "judas-priest", price: 2999, img: "assets/judas-priest/BS-white_d34cfe67-6c23-4750-98a7-8f9b2febb41c.png", note: "Classic British Steel album art tee" },
+  { id: "jp-british-steel-cap", name: "British Steel Cap", category: "judas-priest", price: 1999, img: "assets/judas-priest/British-steel-cap.png", note: "Embroidered British Steel logo cap" },
+  { id: "jp-is-battle-jacket", name: "Iron & Steel Battle Jacket", category: "judas-priest", price: 9999, img: "assets/judas-priest/ISBattleJacketfront.png", note: "Official Iron & Steel tour battle jacket" },
+  { id: "jp-is-tour-bandana", name: "Iron & Steel Tour Bandana", category: "judas-priest", price: 1299, img: "assets/judas-priest/ISTourbandana.png", note: "Official IS tour bandana" },
+  { id: "jp-painkiller-hoodie-blk", name: "Painkiller Linear Oval Black Hoodie", category: "judas-priest", price: 5499, img: "assets/judas-priest/JDP-25-PainkillerLinear-Oval-BlkHd-F.png", note: "Painkiller 2025 tour hoodie – black" },
+  { id: "jp-painkiller-washed-tee", name: "Painkiller Title Washed Black T-Shirt", category: "judas-priest", price: 3299, img: "assets/judas-priest/JDP-25-PainkillerTitle-TwoColour-WashBlkT-F.png", note: "Two-colour Painkiller washed tee" },
+  { id: "jp-angel-retribution-ls", name: "Angel of Retribution Long Sleeve", category: "judas-priest", price: 3799, img: "assets/judas-priest/JDP_24-AngelOfRetribution-VintageAngelDistressPocket-BlkLS-F.png", note: "Vintage distressed pocket print – black" },
+  { id: "jp-invincible-shield-tee", name: "Invincible Shield Symbol T-Shirt", category: "judas-priest", price: 2999, img: "assets/judas-priest/JDP_InvincibleShield_Symbol-Itin-BlkT-F.png", note: "Itinerary print on black tee" },
+  { id: "jp-painkiller-gitd-tee", name: "Painkiller Glow-in-the-Dark Tee", category: "judas-priest", price: 3499, img: "assets/judas-priest/JP-Painkiller-GITD-tee.png", note: "Glows in the dark – limited edition" },
+  { id: "jp-ros-bandana", name: "Screaming for Vengeance Bandana", category: "judas-priest", price: 1299, img: "assets/judas-priest/JPROSBANDANA3.png", note: "Classic ROS print bandana" },
+  { id: "jp-tote-bag", name: "Judas Priest Tote Bag", category: "judas-priest", price: 1499, img: "assets/judas-priest/JPTOTE.png", note: "Sturdy canvas tote with JP logo" },
+  { id: "jp-sfv-beanie", name: "Screaming for Vengeance Beanie", category: "judas-priest", price: 1799, img: "assets/judas-priest/JP_SFV_beanie.png", note: "Warm knit beanie – JP SFV print" },
+  { id: "jp-symbol-bandana", name: "JP Symbol Bandana", category: "judas-priest", price: 1199, img: "assets/judas-priest/JP_SymbolBandana_Vis.png", note: "Classic Judas Priest symbol bandana" },
+  { id: "jp-painkiller-distressed-tee", name: "Painkiller Distressed T-Shirt", category: "judas-priest", price: 3199, img: "assets/judas-priest/Painkiller-distressed-fb.png", note: "Distressed front & back print tee" },
+  { id: "jp-edge-tee", name: "The Edge of Darkness T-Shirt", category: "judas-priest", price: 2799, img: "assets/judas-priest/edge-f.png", note: "Edge graphic front print tee" },
+  { id: "jp-epitaph-beanie", name: "Epitaph Beanie", category: "judas-priest", price: 1799, img: "assets/judas-priest/epitaph-beanie-2.png", note: "Epitaph tour knit beanie" },
+  { id: "jp-ros-keychain", name: "Screaming for Vengeance Keychain", category: "judas-priest", price: 799, img: "assets/judas-priest/jp_ros_keychain.png", note: "Metal keychain – ROS artwork" },
+  { id: "jp-painkiller-keychain", name: "Painkiller Keychain", category: "judas-priest", price: 799, img: "assets/judas-priest/painkillerkeychain.png", note: "Metal Painkiller logo keychain" },
+  { id: "jp-patch-set", name: "Judas Priest Patch Set", category: "judas-priest", price: 1599, img: "assets/judas-priest/patchset.png", note: "Set of embroidered JP patches" },
+  { id: "jp-swod-hoodie", name: "Screaming for Vengeance of Darkness Hoodie", category: "judas-priest", price: 5499, img: "assets/judas-priest/swodhoodiefront.png", note: "SWOD tour hoodie" },
+  { id: "jp-swod-ls-tee", name: "SWOD Long Sleeve T-Shirt", category: "judas-priest", price: 3499, img: "assets/judas-priest/swodlstee.png", note: "Screaming for Vengeance of Darkness long sleeve" },
+  { id: "jp-classic-tee-black", name: "Judas Priest Classic Black Tee", category: "judas-priest", price: 2799, img: "assets/judas-priest/unisex-classic-tee-black-front-6995c1112fe46.png", note: "Unisex classic black tee" }
 ];
 
 const SAMPLE_SUBSCRIPTIONS = [
@@ -1033,12 +1058,13 @@ function loadProducts(category){
 }
 
 function productCard(p){
+  const href = `product.html#${encodeURIComponent(p.id)}`;
   return `
-  <div class="card popular-card">
+  <a href="${href}" class="card popular-card product-card-link" data-preview-id="${p.id}" aria-label="View ${escapeAttr(p.name)}">
     <div class="popular-card__media">
-      <a href="product.html?id=${encodeURIComponent(p.id)}" class="thumb" aria-label="${p.name}">
+      <div class="thumb">
         ${lazyImage(p.img, p.name, "popular-card__image")}
-      </a>
+      </div>
       <div class="popular-card__glow"></div>
       <span class="popular-card__badge">Popular product</span>
     </div>
@@ -1054,7 +1080,7 @@ function productCard(p){
         <button class="btn primary" data-add="${p.id}">${t("addButton", "Add")}</button>
       </div>
     </div>
-  </div>
+  </a>
   `;
 }
 
@@ -1062,11 +1088,98 @@ function wireAddButtons(root=document){
   $all("[data-add]", root).forEach(btn => {
     btn.addEventListener("click", (e) => {
       e.preventDefault();
+      e.stopPropagation();
       addToCart(btn.getAttribute("data-add"), 1);
       openCart();
     });
   });
 }
+
+/* ── Product Preview Modal ─────────────────────────────────────── */
+function ensurePreviewModal(){
+  if(document.querySelector("[data-preview-modal]")) return;
+  const backdrop = document.createElement("div");
+  backdrop.className = "modalBackdrop";
+  backdrop.setAttribute("data-preview-modal","");
+  backdrop.setAttribute("aria-hidden","true");
+  backdrop.innerHTML = `
+    <div class="modal" role="dialog" aria-label="Product preview" style="max-width:800px;width:min(800px,96vw)">
+      <div class="modalHeader">
+        <h3 data-preview-title="">Product Preview</h3>
+        <button class="btn icon" data-preview-close="" aria-label="Close" style="font-size:20px;line-height:1">×</button>
+      </div>
+      <div class="modalBody" data-preview-body="" style="padding:20px"></div>
+    </div>`;
+  document.body.appendChild(backdrop);
+  backdrop.addEventListener("click", (e)=>{ if(e.target===backdrop) closeProductPreview(); });
+  backdrop.querySelector("[data-preview-close]").addEventListener("click", closeProductPreview);
+}
+
+function openProductPreview(product){
+  ensurePreviewModal();
+  const backdrop = document.querySelector("[data-preview-modal]");
+  const title    = backdrop.querySelector("[data-preview-title]");
+  const body     = backdrop.querySelector("[data-preview-body]");
+  const isMerch  = product.category === "judas-priest";
+  const ratio    = isMerch ? "4/5" : "1/1";
+  const kicker   = isMerch ? "Official Merchandise" : "Digital Delivery";
+  const noteText = isMerch
+    ? "Order via WhatsApp — we confirm and dispatch within 1–3 business days."
+    : "After payment, share your account email / ID on WhatsApp. We deliver within 5–30 minutes.";
+
+  title.textContent = product.name;
+  body.innerHTML = `
+    <div class="pvGrid">
+      <div class="pvMedia">
+        <div class="thumb" style="aspect-ratio:${ratio};border-radius:12px;overflow:hidden;background:#111">
+          ${lazyImage(product.img, product.name, "pv-img")}
+        </div>
+      </div>
+      <div class="pvInfo">
+        <div class="kicker">${kicker}</div>
+        <h2 style="margin:8px 0 4px;font-size:clamp(18px,3vw,26px)">${escapeHtml(product.name)}</h2>
+        <p class="cardMeta" style="margin-bottom:10px">${localeNote(product)}</p>
+        <div class="badge" style="font-size:18px;padding:6px 16px;display:inline-block;margin-bottom:14px">${formatNPR(product.price)}</div>
+        <p style="color:rgba(255,255,255,.7);font-size:14px;line-height:1.6;margin-bottom:18px">${escapeHtml(product.note||"")}. ${escapeHtml(noteText)}</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn primary" data-pv-add="${product.id}" style="min-width:130px">Add to Cart</button>
+          <a class="btn" href="product.html#${encodeURIComponent(product.id)}">Full Details</a>
+        </div>
+      </div>
+    </div>`;
+
+  backdrop.querySelector("[data-pv-add]")?.addEventListener("click", ()=>{
+    addToCart(product.id, 1);
+    closeProductPreview();
+    openCart();
+  });
+
+  backdrop.setAttribute("aria-hidden","false");
+  backdrop.style.display = "flex";
+  initLazyImages(body);
+}
+
+function closeProductPreview(){
+  const backdrop = document.querySelector("[data-preview-modal]");
+  if(!backdrop) return;
+  backdrop.setAttribute("aria-hidden","true");
+  backdrop.style.display = "none";
+}
+
+function wirePreviewCards(root=document){
+  root.querySelectorAll("[data-preview-id]").forEach(card=>{
+    if(card._previewWired) return;
+    card._previewWired = true;
+    card.addEventListener("click",(e)=>{
+      if(e.target.closest("[data-add]")) return;
+      e.preventDefault();
+      const id = card.getAttribute("data-preview-id");
+      const product = products.find(p=>p.id===id) || DEFAULT_PRODUCTS.find(p=>p.id===id);
+      if(product) openProductPreview(product);
+    });
+  });
+}
+/* ─────────────────────────────────────────────────────────────── */
 
 function registerSampleProducts(items = []){
   if(!items.length) return;
@@ -1153,12 +1266,12 @@ function getParam(name){
 function renderCategoryPage(){
   const root = document.querySelector("[data-category-products]");
   if(!root) return;
-  const id = getParam("c") || "subscriptions";
+  const id = getParam("c") || "judas-priest";
   const cat = categories.find(x => x.id === id);
   document.title = `${cat ? cat.name : "Category"} - SoftUpakaran`;
   const header = document.querySelector("[data-category-title]");
   if(header) header.textContent = cat ? cat.name : "Category";
-  const filtered = products.filter(p => p.category === id);
+  const filtered = products.filter(p => p && p.category === id);
   const fallbackSample = {
     id: "sample-category-placeholder",
     name: "Sample Netflix Premium",
@@ -1183,8 +1296,22 @@ function renderCategoryPage(){
 function renderProductPage(){
   const root = document.querySelector("[data-product]");
   if(!root) return;
-  const id = getParam("id") || "p1";
-  const p = products.find(x => x.id === id) || products[0];
+  const rawId = getParam("id") || (location.hash ? decodeURIComponent(location.hash.slice(1)) : null);
+  if(!rawId){
+    root.innerHTML = `
+      <div class="card"><div class="pad">
+        <p class="cardTitle">No product selected</p>
+        <p class="cardMeta">Please browse the store and select a product.</p>
+        <a class="btn primary" href="index.html" style="margin-top:14px;display:inline-block">Browse Store</a>
+      </div></div>`;
+    return;
+  }
+  const id = rawId;
+  const p = products.find(x => x.id === id)
+    || DEFAULT_PRODUCTS.find(x => x.id === id)
+    || SAMPLE_SUBSCRIPTIONS.find(x => x.id === id)
+    || SAMPLE_TOOLS.find(x => x.id === id)
+    || COLLECTION_SAMPLE_FALLBACK.find(x => x.id === id);
   if(!p){
     root.innerHTML = `
       <div class="card"><div class="pad">
@@ -1192,35 +1319,59 @@ function renderProductPage(){
         <p class="cardMeta">Fetching details from the catalog.</p>
       </div></div>`;
     loadProductById(id).then((result) => {
-      if(result) renderProductPage();
+      if(result){
+        renderProductPage();
+      } else {
+        root.innerHTML = `
+          <div class="card"><div class="pad">
+            <p class="cardTitle">Product not found</p>
+            <p class="cardMeta">This product could not be loaded. It may have been removed or is temporarily unavailable.</p>
+            <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+              <a class="btn primary" href="index.html">Back to Store</a>
+              <button class="btn" onclick="history.back()">Go Back</button>
+            </div>
+          </div></div>`;
+      }
     });
     return;
   }
   document.title = `${p.name} - SoftUpakaran`;
+  const isMerch = p.category === "judas-priest";
+  const kicker = isMerch ? "Official Merchandise" : "Digital Delivery";
+  const deliveryNote = isMerch
+    ? `${p.note}. Order via WhatsApp — we confirm and dispatch within 1–3 business days.`
+    : `${p.note}. After payment, share your account email/ID on WhatsApp. We deliver within 5–30 minutes.`;
+  const steps = isMerch
+    ? "1) Choose item → 2) Place order → 3) Pay via eSewa/Khalti → 4) We ship to your address"
+    : "1) Choose plan → 2) Share details → 3) Pay → 4) Get delivery";
   const heroContent = `
     <div class="heroGrid">
       <div class="heroCard">
-        <div class="thumb" style="aspect-ratio: 16/11">
-          ${lazyImage(p.img, p.name, "hero-img")}
+        <div style="border-radius:12px; overflow:hidden; background:#111; display:flex; align-items:center; justify-content:center; min-height:200px;">
+          <img class="lazy hero-img" loading="lazy" decoding="async"
+               src="${LAZY_IMAGE_PLACEHOLDER}"
+               data-src="${escapeHtml(p.img)}"
+               alt="${escapeHtml(p.name)}"
+               style="width:100%; height:auto; max-height:480px; object-fit:contain; display:block; border-radius:12px;">
         </div>
       </div>
       <div class="heroCard">
         <div class="inner">
-          <div class="kicker">Digital Delivery</div>
+          <div class="kicker">${kicker}</div>
           <div class="h1" style="margin-top:10px">${p.name}</div>
-          <p class="sub">${p.note}. After payment, share your account email/ID or site URL on WhatsApp. We deliver within 5-30 minutes.</p>
+          <p class="sub">${deliveryNote}</p>
           <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
             <div class="badge">${formatNPR(p.price)}</div>
-            <div class="small">Secure checkout - Support chat</div>
+            <div class="small">Secure checkout · Support on WhatsApp</div>
           </div>
           <div class="heroActions">
             <button class="btn primary" id="buyNow">Add to cart</button>
-            <a class="btn" href="category.html?c=${encodeURIComponent(p.category)}">Back to category</a>
+            <a class="btn" href="category.html?c=${encodeURIComponent(p.category)}">Back to collection</a>
           </div>
           <div style="margin-top:18px">
             <div class="feature">
-              <h3>Steps</h3>
-              <p>1) Choose plan - 2) Share details - 3) Pay - 4) Get delivery</p>
+              <h3>How it works</h3>
+              <p>${steps}</p>
             </div>
           </div>
         </div>
@@ -1235,7 +1386,7 @@ function renderProductPage(){
 
 function relatedCard(p){
   return `
-    <a class="related-card" href="product.html?id=${encodeURIComponent(p.id)}">
+    <a class="related-card" href="product.html#${encodeURIComponent(p.id)}">
       <div class="thumb">
         ${lazyImage(p.img, p.name)}
       </div>
@@ -1588,7 +1739,7 @@ function wireSearch(){
           e.preventDefault();
           const target = suggestions[activeIndex];
           if(target){
-            window.location.href = `product.html?id=${encodeURIComponent(target.id)}`;
+            window.location.href = `product.html#${encodeURIComponent(target.id)}`;
           }
         }
       } else if(e.key === "Escape"){
@@ -1611,7 +1762,7 @@ function wireSearch(){
       if(btn){
         const id = btn.getAttribute("data-search-id");
         if(id){
-          window.location.href = `product.html?id=${encodeURIComponent(id)}`;
+          window.location.href = `product.html#${encodeURIComponent(id)}`;
         }
       }
     });
@@ -1817,7 +1968,10 @@ async function loadCatalogFromApi(){
     if (prodsRes.ok){
       const rows = await prodsRes.json();
     if(Array.isArray(rows) && rows.length){
-      products = rows.map(transformBackendProduct);
+      const apiProds = rows.map(transformBackendProduct);
+      const apiIds = new Set(apiProds.map(p => p.id));
+      const localOnly = DEFAULT_PRODUCTS.filter(p => !apiIds.has(p.id));
+      products = [...apiProds, ...localOnly];
       didLoadProducts = true;
     }
   }
@@ -1964,6 +2118,23 @@ async function init(){
   wireCartButtons();
   wireCouponCodeTrigger();
   wireSearch();
+  ensurePreviewModal();
+
+  // Global delegated handler for product card previews
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("[data-preview-modal]")) return; // never intercept clicks inside the preview modal
+    const card = e.target.closest("[data-preview-id]");
+    if (!card) return;
+    if (e.target.closest("[data-add]")) return;
+    e.preventDefault();
+    const id = card.getAttribute("data-preview-id");
+    const product = products.find(p => p.id === id) || DEFAULT_PRODUCTS.find(p => p.id === id);
+    if (product) openProductPreview(product);
+  }, true); // capture phase so we catch it before any other handler
+
+  // ESC closes preview modal
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeProductPreview(); });
+
   void Promise.allSettled([settingsTask, testimonialsTask, blogTask, heroTask, catalogTask]);
 
   // hero CTA
