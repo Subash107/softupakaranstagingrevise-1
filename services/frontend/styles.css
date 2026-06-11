@@ -4,3 +4,28 @@
 .pvMedia .thumb img,.pvMedia .thumb svg{width:100%;height:100%;object-fit:cover;border-radius:12px}
 .pvInfo .kicker{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:4px}
 [data-preview-modal]{align-items:center}
+/* ── Hero Slider Upgrades ─────────────────────────────────────── */
+/* 1. Crossfade + scale transition (replaces horizontal translate) */
+.heroSliderTrack{display:block!important;position:relative!important;overflow:hidden!important;transform:none!important;transition:none!important;min-height:clamp(360px,48vw,520px)}
+.heroSlide{position:absolute!important;inset:0;flex:none!important;width:100%!important;min-height:0!important;opacity:0;transform:scale(1.04);transition:opacity .75s ease,transform .85s cubic-bezier(.22,1,.36,1);pointer-events:none;z-index:0}
+.heroSlide[data-active="1"]{opacity:1!important;transform:scale(1)!important;pointer-events:auto;z-index:2}
+/* 2. Word-by-word cascade */
+.heroWord{display:inline-block;opacity:0;transform:translateY(12px);transition:opacity .38s ease var(--wd,0s),transform .44s cubic-bezier(.22,1,.36,1) var(--wd,0s)}
+.heroSlide--cta-visible .heroWord{opacity:1;transform:translateY(0)}
+.heroSlider--reduced-motion .heroWord{opacity:1!important;transform:none!important;transition:none!important}
+/* 3. SVG progress ring dots */
+.heroDots{gap:10px!important}
+.heroDot{width:32px!important;height:32px!important;border-radius:0!important;background:none!important;cursor:pointer;flex-shrink:0;overflow:visible}
+.heroDot.active{background:none!important}
+.heroDot__track{fill:none;stroke:rgba(255,255,255,.22);stroke-width:3}
+.heroDot__fill{fill:none;stroke:rgba(255,255,255,.9);stroke-width:3;stroke-linecap:round;stroke-dasharray:88;stroke-dashoffset:88;transform:rotate(-90deg);transform-origin:18px 18px}
+.heroDot.active .heroDot__fill{animation:dotProgress var(--dot-dur,4.8s) linear forwards}
+@keyframes dotProgress{to{stroke-dashoffset:0}}
+.heroSlider--reduced-motion .heroDot__fill{animation:none!important}
+.heroSlider--reduced-motion .heroDot.active .heroDot__fill{stroke-dashoffset:0;transition:none}
+/* 4. Animated gradient border */
+@property --ba{syntax:'<angle>';inherits:false;initial-value:0deg}
+.heroSlider::before{content:'';position:absolute;inset:0;border-radius:24px;z-index:8;padding:2px;background:conic-gradient(from var(--ba,0deg),#3b82f6 0%,#a855f7 25%,#22d3ee 50%,#ec4899 75%,#3b82f6 100%);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:borderSpin 6s linear infinite;opacity:.65;pointer-events:none}
+@keyframes borderSpin{to{--ba:360deg}}
+.heroSlider--reduced-motion::before{animation:none!important;opacity:.2}
+@media(max-width:720px){.heroSlider::before{border-radius:0}}

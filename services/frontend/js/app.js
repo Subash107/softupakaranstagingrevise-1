@@ -2214,9 +2214,17 @@ async function loadSliderBanners() {
     });
 }
 
+function wrapWords(escaped, baseDelay, step) {
+  return escaped.split(/\s+/)
+    .map((w, i) => `<span class="heroWord" style="--wd:${(baseDelay + i * step).toFixed(2)}s">${w}</span>`)
+    .join(" ");
+}
+
 function buildHeroSlideMarkup(banner, index) {
-  const title = escapeHtml(banner.title || "Digital Delivery");
-  const subtitle = escapeHtml(banner.subtitle || banner.sub || "");
+  const rawTitle = escapeHtml(banner.title || "Digital Delivery");
+  const title = wrapWords(rawTitle, 0.2, 0.07);
+  const rawSubtitle = escapeHtml(banner.subtitle || banner.sub || "");
+  const subtitle = rawSubtitle ? wrapWords(rawSubtitle, 0.42, 0.05) : "";
   const rawImage = String(banner.image || `assets/banners/banner-${(index % 5) + 1}.webp`)
     .replace(/assets\/banners\/banner-(\d+)\.png$/i, "assets/banners/banner-$1.webp");
   const image = escapeHtml(rawImage);
@@ -2356,7 +2364,18 @@ function initializeHeroSlider() {
   };
 
   const updateDots = () => {
-    dots.querySelectorAll(".heroDot").forEach((dot, idx) => dot.classList.toggle("active", idx === current));
+    dots.querySelectorAll(".heroDot").forEach((dot, idx) => {
+      const isActive = idx === current;
+      dot.classList.toggle("active", isActive);
+      const fill = dot.querySelector(".heroDot__fill");
+      if (fill) {
+        fill.style.animation = "none";
+        if (isActive && !motionReduced) {
+          fill.getBoundingClientRect();
+          fill.style.animation = "";
+        }
+      }
+    });
   };
 
   const setMotionReduced = (value, persist = false) => {
@@ -2535,7 +2554,7 @@ function initializeHeroSlider() {
 
   const setActiveSlide = (value, renderTiles = true) => {
     current = normalizeIndex(value);
-    track.style.transform = `translateX(-${current * 100}%)`;
+    track.style.transform = "";
     slides.forEach((slide, idx) => {
       slide.setAttribute("data-active", idx === current ? "1" : "0");
       if (idx !== current) {
@@ -2560,6 +2579,8 @@ function initializeHeroSlider() {
   const pauseSlider = () => clearTimeout(timer);
 
   dots.innerHTML = "";
+  dots.style.setProperty("--dot-dur", `${AUTO_DELAY}ms`);
+  const SVG_NS = "http://www.w3.org/2000/svg";
   slides.forEach((slide, idx) => {
     const hasLink = sliderBanners[idx] && sliderBanners[idx].link;
     slide.style.cursor = hasLink ? "pointer" : "default";
@@ -2569,8 +2590,17 @@ function initializeHeroSlider() {
         location.href = href;
       }
     };
-    const dot = document.createElement("div");
-    dot.className = "heroDot";
+    const dot = document.createElementNS(SVG_NS, "svg");
+    dot.setAttribute("class", "heroDot");
+    dot.setAttribute("viewBox", "0 0 36 36");
+    dot.setAttribute("role", "presentation");
+    const trackC = document.createElementNS(SVG_NS, "circle");
+    trackC.setAttribute("class", "heroDot__track");
+    trackC.setAttribute("cx", "18"); trackC.setAttribute("cy", "18"); trackC.setAttribute("r", "14");
+    const fillC = document.createElementNS(SVG_NS, "circle");
+    fillC.setAttribute("class", "heroDot__fill");
+    fillC.setAttribute("cx", "18"); fillC.setAttribute("cy", "18"); fillC.setAttribute("r", "14");
+    dot.appendChild(trackC); dot.appendChild(fillC);
     dot.onclick = (event) => {
       event.stopPropagation();
       setActiveSlide(idx);
