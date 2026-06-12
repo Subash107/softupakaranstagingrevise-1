@@ -1,6 +1,15 @@
 ﻿<!doctype html>
 <html lang="en">
 <head>
+<script>
+(function(){
+  var t=localStorage.getItem('su_theme');
+  if(t==='light'&&!localStorage.getItem('su_theme_explicit')){
+    localStorage.setItem('su_theme','dark');
+    document.documentElement.removeAttribute('data-theme');
+  }
+})();
+</script>
   <meta name="api-base" content="https://softupakaran-backend.onrender.com">
   <meta name="google-client-id" content="161160759250-tvcu3a09i8gtdeaia6gpk04jo343oiet.apps.googleusercontent.com">
   <meta name="google-authorized-origins" content="https://softupakaran.vercel.app,https://softupakaran-cf67l89wj-subash107s-projects.vercel.app,https://subash107.github.io/softupakaran/">
@@ -87,7 +96,7 @@
 
         <div class="btnRow">
           <button id="btnLogout" class="btn" type="button">Logout</button>
-                    <a class="btn" href="index.html" id="homeLink" style="text-decoration:none">Back to Home</a>
+                    <a class="btn" href="/" id="homeLink" style="text-decoration:none">Back to Home</a>
 <a class="btn" href="secret-admin-panel.html" id="adminLink" style="text-decoration:none">Admin</a>
         </div>
         <pre id="meBox" style="display:none"></pre>
@@ -142,7 +151,7 @@
   </main>
 
   <!-- Shared scripts -->
-  <script src="js/app.js?v=20260424e"></script>
+  <script src="js/app.js?v=20260612b"></script>
   <script src="js/auth-gate.js?v=20260305g"></script>
   <script src="js/auth.js?v=20260305g"></script>
 

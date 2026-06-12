@@ -2,29 +2,102 @@
 
 <html lang="en">
 <head>
+<script>
+(function(){
+  var t=localStorage.getItem('su_theme');
+  if(t==='light'&&!localStorage.getItem('su_theme_explicit')){
+    localStorage.setItem('su_theme','dark');
+    document.documentElement.removeAttribute('data-theme');
+  }
+})();
+</script>
   <!-- NOTE: Sensitive config (API endpoint, Google Client ID) should be loaded from env.js -->
   <!-- These values must NEVER be hardcoded in HTML - always use environment variables -->
   <script src="js/env.js?v=20260306g"></script>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https://accounts.google.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https:; frame-src https://accounts.google.com;">
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
-<meta content="SoftUpakaran - Products/images later." name="description"/>
+<meta name="description" content="Buy Netflix, Spotify, PUBG UC, WordPress plugins, VPN and more. Instant delivery via WhatsApp. Trusted by 1200+ customers in Nepal."/>
+<!-- Open Graph -->
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://softupakaran.vercel.app/"/>
+<meta property="og:title" content="SoftUpakaran — Digital Products for Nepal"/>
+<meta property="og:description" content="Buy Netflix, Spotify, PUBG UC, WordPress plugins, VPN and more. Instant delivery via WhatsApp. Trusted by 1200+ customers in Nepal."/>
+<meta property="og:image" content="https://softupakaran.vercel.app/assets/banners/banner-1.webp"/>
+<meta property="og:locale" content="en_US"/>
+<meta property="og:site_name" content="SoftUpakaran"/>
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="SoftUpakaran — Digital Products for Nepal"/>
+<meta name="twitter:description" content="Buy Netflix, Spotify, PUBG UC, WordPress plugins, VPN and more. Instant delivery via WhatsApp."/>
+<meta name="twitter:image" content="https://softupakaran.vercel.app/assets/banners/banner-1.webp"/>
 <link rel="preload" as="image" href="assets/banners/banner-1.webp" fetchpriority="high"/>
+<meta name="keywords" content="Netflix Nepal, Spotify Nepal, PUBG UC Nepal, WordPress plugins Nepal, VPN Nepal, digital products Nepal, SoftUpakaran"/>
+<meta name="author" content="SoftUpakaran"/>
+<meta name="robots" content="index, follow"/>
+<link rel="canonical" href="https://softupakaran.com/"/>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Store","name":"SoftUpakaran","url":"https://softupakaran.com","description":"Nepal's digital products marketplace — subscriptions, gaming top-ups, WordPress tools, VPN, and live event tickets.","address":{"@type":"PostalAddress","streetAddress":"New Baneshwor","addressLocality":"Kathmandu","addressCountry":"NP"},"contactPoint":{"@type":"ContactPoint","contactType":"customer support","availableLanguage":["English","Nepali"]},"sameAs":[]}</script>
 <title>SoftUpakaran - Home</title>
 <link href="assets/logo.svg" rel="icon" type="image/svg+xml"/>
-<link href="styles.css?v=20260424e" rel="stylesheet"/>
+<link rel="manifest" href="/manifest.json"/>
+<meta name="theme-color" content="#7C3AED"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<link href="styles.css?v=20260612b" rel="stylesheet"/>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Store",
+  "name": "SoftUpakaran",
+  "url": "https://softupakaran.vercel.app",
+  "logo": "https://softupakaran.vercel.app/assets/logo.svg",
+  "description": "Digital products marketplace in Nepal — Netflix, Spotify, PUBG UC, WordPress plugins, VPN and more. Instant delivery via WhatsApp.",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "New Baneshwor",
+    "addressLocality": "Kathmandu",
+    "addressCountry": "NP"
+  },
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "customer service",
+    "availableLanguage": ["English", "Nepali"]
+  },
+  "sameAs": [],
+  "priceRange": "Rs. 100 - Rs. 10,000",
+  "currenciesAccepted": "NPR",
+  "paymentAccepted": "eSewa, Khalti, IME Pay, ConnectIPS, Bank Transfer"
+}
+</script>
   <!-- Swiper removed: using native grid layout for collections -->
 </head>
 <body class="home">
-<div class="promoRibbon">
-  <div class="container">
-    <span>Limited offer: Rs. 5 off on checkout. Use code <strong>SOFT10</strong>.</span>
-    <a class="btn icon light" href="#" data-apply-coupon="SOFT10">Use code</a>
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.getRegistrations().then(function(regs){
+    if(!regs.length) return;
+    Promise.all(regs.map(function(r){ return r.unregister(); })).then(function(){
+      if(!sessionStorage.getItem('sw_refreshed')){ sessionStorage.setItem('sw_refreshed','1'); location.reload(); }
+    });
+  });
+  caches.keys().then(function(keys){
+    keys.forEach(function(k){ if(k!=='su-shell-v11') caches.delete(k); });
+  });
+}
+</script>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="promoRibbon" id="announcementBar" data-announce-id="soft10-v1">
+  <div class="container" style="display:flex;align-items:center;justify-content:center;gap:12px;flex:1">
+    <span>🎉 Limited offer: Rs. 5 off on checkout. Use code <strong>SOFT10</strong>.</span>
+    <a class="btn icon light" href="#" data-apply-coupon="SOFT10" style="font-size:12px;padding:4px 12px">Use code</a>
   </div>
+  <button class="announceClose" id="announceCloseBtn" aria-label="Dismiss announcement">✕</button>
 </div>
 <header class="topbar">
 <div class="container">
 <div class="nav">
-<a class="brand" href="index.html">
+<a class="brand" href="/">
 <img alt="SoftUpakaran" src="assets/logo.svg"/>
 <span class="badge delivery-badge brand-badge">Instant Delivery</span>
 </a>
@@ -35,7 +108,8 @@
       <div class="search-dropdown" data-search-dropdown role="listbox"></div>
     </div>
 <div class="navlinks">
-<a class="btn" href="index.html"><span>Home</span></a>
+<a class="btn" href="/"><span>Home</span></a>
+<a class="btn" href="product.html#wishlist" aria-label="Wishlist" title="My Wishlist"><span>♡</span> <span>Wishlist</span></a>
 <a class="btn" data-open-cart="" href="product.html"><span>Cart</span> <span class="badge" data-cart-count="">0</span></a>
 <div id="googleNavBtn" class="google-nav-btn" aria-label="Google sign in"></div>
     <button class="btn icon nav-help-btn" type="button" data-ai-help-btn aria-label="Open AI assistant">
@@ -48,10 +122,11 @@
     <div class="langSwitch" data-lang-toggle="">
       <button type="button" data-lang-btn="en">EN</button>
       <button type="button" data-lang-btn="np" aria-label="Nepali" title="Nepali">ने</button>
+      <button type="button" data-lang-btn="fr" aria-label="Français" title="Français">FR</button>
     </div>
   </div>
   <div class="mobileNav">
-    <a class="mobileNavBtn" href="index.html" aria-label="Home">
+    <a class="mobileNavBtn" href="/" aria-label="Home">
       <span>Home</span>
     </a>
     <button class="mobileNavBtn" type="button" data-open-cart="" aria-label="Cart">
@@ -68,18 +143,19 @@
 <a id="adminLink" style="display:none" href="admin.html">Admin</a></div>
 <div class="pillnav">
 <div class="pills" data-pills="">
-  <a class="pill" href="category.html?c=subscriptions">Subscriptions</a>
-  <a class="pill" href="category.html?c=wp-plugins">WP Plugins</a>
-  <a class="pill" href="category.html?c=wp-themes">WP Themes</a>
-  <a class="pill" href="category.html?c=ecommerce">eCommerce</a>
-  <a class="pill" href="category.html?c=vpn">VPN</a>
-  <a class="pill" href="category.html?c=web-development">Web Development</a>
-  <a class="pill" href="category.html?c=judas-priest">🤘 Judas Priest</a>
+  <a class="pill" href="live-events.html">🎸 Live Events</a>
+  <a class="pill" href="category#subscriptions">Subscriptions</a>
+  <a class="pill" href="category#wp-plugins">WP Plugins</a>
+  <a class="pill" href="category#wp-themes">WP Themes</a>
+  <a class="pill" href="category#ecommerce">eCommerce</a>
+  <a class="pill" href="category#vpn">VPN</a>
+  <a class="pill" href="category#web-development">Web Development</a>
+  <a class="pill" href="category#judas-priest">🤘 Judas Priest</a>
 </div>
 </div>
 </div>
 </header>
-<main class="container">
+<main class="container" id="main-content">
 <section class="heroSlider" data-hero-slider="">
 <div class="heroSliderTrack"></div>
 <div class="heroDots"></div>
@@ -90,24 +166,24 @@
 </section>
 <div class="heroStats" data-hero-stats="">
   <div class="heroStats__item" data-accent="teal">
-    <strong>Instant delivery</strong>
-    <p>5-30 min digital delivery</p>
+    <strong><span data-count="1200" data-count-suffix="+">1200+</span></strong>
+    <p>Happy customers</p>
   </div>
   <div class="heroStats__item" data-accent="cyan">
-    <strong>24/7 WhatsApp</strong>
-    <p>Support + proof</p>
+    <strong><span data-count="500" data-count-suffix="+">500+</span></strong>
+    <p>Products available</p>
   </div>
   <div class="heroStats__item" data-accent="amber">
-    <strong>Secure checkout</strong>
-    <p>Encrypted &amp; private</p>
+    <strong><span data-count="15" data-count-suffix=" min">15 min</span></strong>
+    <p>Avg. delivery time</p>
   </div>
   <div class="heroStats__item" data-accent="pink">
-    <strong>Instant support</strong>
-    <p>Live WhatsApp + chat</p>
+    <strong><span data-count="98" data-count-suffix="%">98%</span></strong>
+    <p>Satisfaction rate</p>
   </div>
   <div class="heroStats__item" data-accent="purple">
-    <strong>Local dev packs</strong>
-    <p>Ready-to-use WordPress kits</p>
+    <strong><span data-count="50" data-count-suffix="+">50+</span></strong>
+    <p>WordPress kits</p>
   </div>
   <div class="heroStats__particles" aria-hidden="true">
     <span class="heroStats__particle heroStats__particle--one"></span>
@@ -120,21 +196,57 @@
   <div class="slider__viewport">
     <div class="slider__track">
       <article class="slide">
-        <h3 data-en="WhatsApp confirmations" data-np="व्हाट्सएप पुष्टि" data-shatter-text>WhatsApp confirmations</h3>
-        <p data-en="Every order sends credentials and proof within minutes." data-np="हरेक अर्डरमा मिनेटभित्र प्रमाण र पहुँच विवरण पठाइन्छ।" data-shatter-text>Every order sends credentials and proof within minutes.</p>
+        <h3 data-en="WhatsApp confirmations" data-np="व्हाट्सएप पुष्टि" data-fr="Confirmations WhatsApp" data-shatter-text>WhatsApp confirmations</h3>
+        <p data-en="Every order sends credentials and proof within minutes." data-np="हरेक अर्डरमा मिनेटभित्र प्रमाण र पहुँच विवरण पठाइन्छ।" data-fr="Chaque commande envoie les identifiants et la preuve en quelques minutes." data-shatter-text>Every order sends credentials and proof within minutes.</p>
       </article>
       <article class="slide">
-        <h3 data-en="Secure digital delivery" data-np="सुरक्षित डिजिटल डेलिभरी" data-shatter-text>Secure digital delivery</h3>
-        <p data-en="Codes arrive instantly via encrypted messages." data-np="कोडहरू इन्क्रिप्टेड सन्देशमार्फत तुरुन्त पठाइन्छ।" data-shatter-text>Codes arrive instantly via encrypted messages.</p>
+        <h3 data-en="Secure digital delivery" data-np="सुरक्षित डिजिटल डेलिभरी" data-fr="Livraison numérique sécurisée" data-shatter-text>Secure digital delivery</h3>
+        <p data-en="Codes arrive instantly via encrypted messages." data-np="कोडहरू इन्क्रिप्टेड सन्देशमार्फत तुरुन्त पठाइन्छ।" data-fr="Les codes arrivent instantanément via des messages chiffrés." data-shatter-text>Codes arrive instantly via encrypted messages.</p>
       </article>
       <article class="slide">
-        <h3 data-en="Local dev packs" data-np="स्थानीय विकास प्याक" data-shatter-text>Local dev packs</h3>
-        <p data-en="Ready-to-use WordPress kits with free updates." data-np="प्रयोगका लागि तयार वर्डप्रेस किटहरू नि:शुल्क अपडेटसहित।" data-shatter-text>Ready-to-use WordPress kits with free updates.</p>
+        <h3 data-en="Local dev packs" data-np="स्थानीय विकास प्याक" data-fr="Packs de développement locaux" data-shatter-text>Local dev packs</h3>
+        <p data-en="Ready-to-use WordPress kits with free updates." data-np="प्रयोगका लागि तयार वर्डप्रेस किटहरू नि:शुल्क अपडेटसहित।" data-fr="Kits WordPress prêts à l'emploi avec mises à jour gratuites." data-shatter-text>Ready-to-use WordPress kits with free updates.</p>
       </article>
     </div>
   </div>
   <button class="slider__arrow slider__arrow--prev" type="button" data-slider-prev aria-label="Previous slide">‹</button>
   <button class="slider__arrow slider__arrow--next" type="button" data-slider-next aria-label="Next slide">›</button>
+</section>
+<section class="le-home-banner" id="live-events-promo">
+  <div class="le-home-banner__bg" aria-hidden="true"></div>
+  <div class="le-home-banner__inner">
+    <div class="le-home-banner__left">
+      <span class="le-home-banner__kicker">🎟️ New Feature</span>
+      <h2 class="le-home-banner__title">Live Events &amp;<br>Concert Tickets</h2>
+      <p class="le-home-banner__sub">Book tickets for Nepal's biggest bands — rock, metal &amp; folk fusion. E-ticket delivered instantly to your inbox.</p>
+      <div class="le-home-banner__bands">
+        <span>1974 AD</span><span>Nepathya</span><span>Cobweb</span><span>Albatross</span><span>Kutumba</span><span>The Uglyz</span>
+      </div>
+      <a class="le-home-banner__cta" href="live-events.html">Browse Events →</a>
+    </div>
+    <div class="le-home-banner__events">
+      <a class="le-home-banner__card" href="live-events.html">
+        <span class="le-home-banner__card-date"><strong>26</strong> Jul</span>
+        <div><strong>1974 AD</strong><br><small>Bhrikutimandap · From Rs. 1,200</small></div>
+        <span class="le-home-banner__card-tag">Rock</span>
+      </a>
+      <a class="le-home-banner__card" href="live-events.html">
+        <span class="le-home-banner__card-date"><strong>15</strong> Aug</span>
+        <div><strong>Nepathya</strong><br><small>Tudikhel · From Rs. 800</small></div>
+        <span class="le-home-banner__card-tag">Folk</span>
+      </a>
+      <a class="le-home-banner__card" href="live-events.html">
+        <span class="le-home-banner__card-date"><strong>30</strong> Aug</span>
+        <div><strong>Cobweb</strong><br><small>CEC Hall · From Rs. 1,000</small></div>
+        <span class="le-home-banner__card-tag">Metal</span>
+      </a>
+      <a class="le-home-banner__card le-home-banner__card--more" href="live-events.html">
+        <span style="font-size:26px">🎸</span>
+        <strong>+3 more events</strong>
+        <small>View all →</small>
+      </a>
+    </div>
+  </div>
 </section>
 <section class="section curated" id="trending">
   <div class="sectionHeader">
@@ -142,16 +254,15 @@
       <h2 data-locale-text="trendingTitle">Trending Subscriptions</h2>
       <p data-locale-text="trendingSubtitle">Hot plans curated for Nepal.</p>
     </div>
-    <a class="btn" href="category.html?c=subscriptions">Explore</a>
+    <a class="btn" href="category#subscriptions">Explore</a>
   </div>
   <div class="trending-banner" aria-label="Netflix Subscription showcase">
     <div class="trending-banner__hero">
       <div>
         <h3>Netflix Subscription</h3>
-        <p class="trending-banner__subtitle">Instant delivery • Secure payments • Nepal</p>
+        <p class="trending-banner__subtitle" data-typewriter="Instant delivery • Secure payments • Nepal|Top-ups, subscriptions &amp; WordPress tools|Delivered in 5–30 minutes via WhatsApp|Trusted by 1200+ customers in Nepal">Instant delivery • Secure payments • Nepal</p>
         <div class="trending-banner__controls">
-          <a class="btn primary" href="category.html?c=netflix">View details</a>
-          <span class="trending-banner__note">Replace this image later</span>
+          <a class="btn primary" href="category#netflix">View details</a>
         </div>
       </div>
       <div class="trending-banner__flag">
@@ -208,22 +319,36 @@
 <section class="section curated" id="tools">
   <div class="sectionHeader">
     <div>
-      <h2>Tools &amp; WordPress Packs</h2>
+      <h2 data-locale-text="toolsTitle">Tools &amp; WordPress Packs</h2>
       <p>The latest plugins, themes, and dev bundles.</p>
     </div>
-    <a class="btn" href="category.html?c=wp-plugins">View tools</a>
+    <a class="btn" href="category#wp-plugins">View tools</a>
   </div>
-  <div class="grid" data-curated="wp-plugins"></div>
+  <div class="grid" data-curated="wp-plugins">
+    <div class="card popular-card skl" aria-hidden="true"><div class="skl-media"></div><div class="popular-card__body"><div class="skl-line skl-t"></div><div class="skl-line skl-m"></div><div class="skl-line skl-p"></div></div></div>
+    <div class="card popular-card skl" aria-hidden="true"><div class="skl-media"></div><div class="popular-card__body"><div class="skl-line skl-t"></div><div class="skl-line skl-m"></div><div class="skl-line skl-p"></div></div></div>
+    <div class="card popular-card skl" aria-hidden="true"><div class="skl-media"></div><div class="popular-card__body"><div class="skl-line skl-t"></div><div class="skl-line skl-m"></div><div class="skl-line skl-p"></div></div></div>
+    <div class="card popular-card skl" aria-hidden="true"><div class="skl-media"></div><div class="popular-card__body"><div class="skl-line skl-t"></div><div class="skl-line skl-m"></div><div class="skl-line skl-p"></div></div></div>
+  </div>
 </section>
 <section class="section" id="popular">
 <div class="sectionHeader">
 <div>
-<h2><h2 class="section-title popular-animate"><span>Popular Products</span></h2></h2>
-<p>Demo products. Replace them in <span class="small">js/app.js</span>.</p>
+<h2 class="section-title popular-animate"><span>Popular Products</span></h2>
+<p>Best selling digital products for Nepal.</p>
 </div>
-<a class="btn" href="category.html?c=subscriptions">View all</a>
+<a class="btn" href="category#subscriptions">View all</a>
 </div>
-<div class="grid" data-popular=""></div>
+<div class="grid" data-popular="">
+  <div class="card popular-card skl" aria-hidden="true"><div class="skl-media"></div><div class="popular-card__body"><div class="skl-line skl-t"></div><div class="skl-line skl-m"></div><div class="skl-line skl-p"></div></div></div>
+  <div class="card popular-card skl" aria-hidden="true"><div class="skl-media"></div><div class="popular-card__body"><div class="skl-line skl-t"></div><div class="skl-line skl-m"></div><div class="skl-line skl-p"></div></div></div>
+  <div class="card popular-card skl" aria-hidden="true"><div class="skl-media"></div><div class="popular-card__body"><div class="skl-line skl-t"></div><div class="skl-line skl-m"></div><div class="skl-line skl-p"></div></div></div>
+  <div class="card popular-card skl" aria-hidden="true"><div class="skl-media"></div><div class="popular-card__body"><div class="skl-line skl-t"></div><div class="skl-line skl-m"></div><div class="skl-line skl-p"></div></div></div>
+  <div class="card popular-card skl" aria-hidden="true"><div class="skl-media"></div><div class="popular-card__body"><div class="skl-line skl-t"></div><div class="skl-line skl-m"></div><div class="skl-line skl-p"></div></div></div>
+  <div class="card popular-card skl" aria-hidden="true"><div class="skl-media"></div><div class="popular-card__body"><div class="skl-line skl-t"></div><div class="skl-line skl-m"></div><div class="skl-line skl-p"></div></div></div>
+  <div class="card popular-card skl" aria-hidden="true"><div class="skl-media"></div><div class="popular-card__body"><div class="skl-line skl-t"></div><div class="skl-line skl-m"></div><div class="skl-line skl-p"></div></div></div>
+  <div class="card popular-card skl" aria-hidden="true"><div class="skl-media"></div><div class="popular-card__body"><div class="skl-line skl-t"></div><div class="skl-line skl-m"></div><div class="skl-line skl-p"></div></div></div>
+</div>
 </section>
 <section class="section blog" id="blog">
   <div class="sectionHeader">
@@ -242,7 +367,7 @@
 <section class="section" id="testimonials">
 <div class="sectionHeader">
 <div>
-<h2>Why Choose Us</h2>
+<h2 data-locale-text="whyTitle">Why Choose Us</h2>
 <p>Simple steps &amp; instant delivery messaging.</p>
 </div>
 </div>
@@ -267,7 +392,7 @@
 <section class="section">
 <div class="sectionHeader">
 <div>
-<h2>What They Say</h2>
+<h2 data-locale-text="testimonialsTitle">What They Say</h2>
 <p>Real feedback from customers.</p>
 </div>
 </div>
@@ -279,6 +404,17 @@
 </div>
 </section>
 </main>
+<div class="trustStrip">
+  <div class="container">
+    <div class="trustBadges">
+      <div class="trustBadge"><span class="trustIcon">🔒</span><div><strong>SSL Secured</strong><span>256-bit encryption</span></div></div>
+      <div class="trustBadge"><span class="trustIcon">⚡</span><div><strong>Instant Delivery</strong><span>5–30 min digital</span></div></div>
+      <div class="trustBadge"><span class="trustIcon">💬</span><div><strong>24/7 Support</strong><span>WhatsApp always on</span></div></div>
+      <div class="trustBadge"><span class="trustIcon">↩️</span><div><strong>Easy Refunds</strong><span>No-questions policy</span></div></div>
+      <div class="trustBadge"><span class="trustIcon">✅</span><div><strong>Verified Seller</strong><span>Licensed & trusted</span></div></div>
+    </div>
+  </div>
+</div>
 <footer class="footer">
 <div class="container">
 <div class="footerGrid">
@@ -289,37 +425,43 @@
             
           </p>
 <p class="copy">New Baneshwor, Kathmandu (demo)  -  +977 01 1234567  -  contact@softupakaran.example</p>
-</img></div>
+</div>
 <div>
 <h4>Collections</h4>
-<a href="category.html?c=subscriptions">Subscriptions</a>
-<a href="category.html?c=netflix">Netflix</a>
-<a href="category.html?c=wp-plugins">WP Plugins</a>
-<a href="category.html?c=wp-themes">WP Themes</a>
+<a href="category#subscriptions">Subscriptions</a>
+<a href="category#netflix">Netflix</a>
+<a href="category#wp-plugins">WP Plugins</a>
+<a href="category#wp-themes">WP Themes</a>
 </div>
 <div>
 <h4>Support</h4>
-<a href="#">Terms &amp; Conditions</a>
-<a href="#">Refund Policy</a>
-<a href="#">Contact</a>
-<a href="#">FAQ</a>
+<a href="terms.html">Terms &amp; Conditions</a>
+<a href="terms.html#refund">Refund Policy</a>
+<a href="about.html#contact">Contact</a>
+<a href="terms.html">FAQ</a>
 </div>
 <div>
 <h4>Payments</h4>
-<a href="#">eSewa (placeholder)</a>
-<a href="#">Khalti (placeholder)</a>
-<a href="#">Bank Transfer</a>
+<div class="payBadges">
+  <span class="payBadge payBadge--esewa">eSewa</span>
+  <span class="payBadge payBadge--khalti">Khalti</span>
+  <span class="payBadge payBadge--ime">IME Pay</span>
+  <span class="payBadge payBadge--connectips">ConnectIPS</span>
+  <span class="payBadge payBadge--bank">🏦 Bank</span>
+</div>
+<a href="#">Terms of Payment</a>
+<a href="#">Refund Policy</a>
 </div>
 <div>
 <h4>Quick links</h4>
 <a href="#trending">Trending</a>
 <a href="#tools">Tools</a>
 <a href="#popular">Popular</a>
-<a href="#testimonials">Why choose</a>
-<a href="#testimonialsList">Feedback</a>
+<a href="about.html">About Us</a>
+<a href="privacy.html">Privacy Policy</a>
 </div>
 </div>
-<div class="copy">Â© 2025 SoftUpakaran (demo). All rights reserved.</div>
+<div class="copy">© 2025 SoftUpakaran (demo). All rights reserved.</div>
 </div>
 </footer>
 <!-- Cart Modal -->
@@ -360,7 +502,35 @@
     </div>
   </div>
 </div>
-<script src="js/app.js?v=20260424e"></script>
+<script>
+/* Focus trap: keep Tab key inside any open modal/dialog */
+(function(){
+  function trapFocus(modal){
+    const sel='a[href],button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
+    const nodes=()=>[...modal.querySelectorAll(sel)].filter(n=>!n.closest('[aria-hidden="true"]')&&n.offsetParent!==null);
+    function handler(e){
+      if(e.key!=='Tab')return;
+      const foc=nodes();if(!foc.length)return;
+      const first=foc[0],last=foc[foc.length-1];
+      if(e.shiftKey){if(document.activeElement===first){e.preventDefault();last.focus();}}
+      else{if(document.activeElement===last){e.preventDefault();first.focus();}}
+    }
+    modal.addEventListener('keydown',handler);
+    return ()=>modal.removeEventListener('keydown',handler);
+  }
+  document.addEventListener('click',function(e){
+    const open=document.querySelector('.modalBackdrop[data-open="1"],.aiChatOverlay[data-open="1"]');
+    if(open)trapFocus(open);
+  });
+  /* Restore focus to trigger element when modal closes */
+  let lastFocused=null;
+  document.addEventListener('focusin',function(e){
+    const m=e.target.closest('.modalBackdrop,.aiChatOverlay');
+    if(!m)lastFocused=document.activeElement;
+  });
+})();
+</script>
+<script src="js/app.js?v=20260612b"></script>
 <script src="js/main.js"></script>
   <script src="js/auth-gate.js?v=20260305g"></script>
   <script src="js/fix-runtime.js"></script>

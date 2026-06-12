@@ -1,0 +1,43 @@
+{
+  "name": "SoftUpakaran — Digital Products Nepal",
+  "short_name": "SoftUpakaran",
+  "description": "Nepal's trusted digital marketplace — subscriptions, gaming top-ups, WordPress tools, VPN, and live concert tickets. Instant delivery via WhatsApp.",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "background_color": "#070A12",
+  "theme_color": "#7C3AED",
+  "orientation": "portrait-primary",
+  "lang": "en",
+  "dir": "ltr",
+  "scope": "/",
+  "categories": ["shopping", "entertainment", "utilities"],
+  "icons": [
+    { "src": "/assets/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/assets/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Live Events",
+      "short_name": "Events",
+      "description": "Browse and book concert tickets",
+      "url": "/live-events.html",
+      "icons": [{ "src": "/assets/logo.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Subscriptions",
+      "short_name": "Subs",
+      "description": "Netflix, Spotify and more",
+      "url": "/category#subscriptions",
+      "icons": [{ "src": "/assets/logo.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Gaming Top-Ups",
+      "short_name": "Gaming",
+      "description": "Free Fire, PUBG UC and gift cards",
+      "url": "/category#gaming",
+      "icons": [{ "src": "/assets/logo.svg", "sizes": "any" }]
+    }
+  ]
+}

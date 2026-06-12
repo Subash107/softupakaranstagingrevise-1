@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<script>
+(function(){
+  var t=localStorage.getItem('su_theme');
+  if(t==='light'&&!localStorage.getItem('su_theme_explicit')){
+    localStorage.setItem('su_theme','dark');
+    document.documentElement.removeAttribute('data-theme');
+  }
+})();
+</script>
+<script src="js/env.js?v=20260306g"></script>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="description" content="About SoftUpakaran — Nepal's trusted digital products marketplace. Instant delivery via WhatsApp. Subscriptions, gaming, WordPress tools and live event tickets."/>
+<meta name="keywords" content="SoftUpakaran Nepal, digital products Nepal, about us, Kathmandu online shop"/>
+<meta name="robots" content="index, follow"/>
+<meta name="author" content="SoftUpakaran"/>
+<link rel="canonical" href="https://softupakaran.com/about.html"/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://softupakaran.com/about.html"/>
+<meta property="og:title" content="About SoftUpakaran — Nepal's Digital Marketplace"/>
+<meta property="og:description" content="Nepal's trusted digital products marketplace. Instant delivery via WhatsApp. Based in Kathmandu."/>
+<meta property="og:image" content="https://softupakaran.com/assets/banners/banner-1.webp"/>
+<meta property="og:site_name" content="SoftUpakaran"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="About SoftUpakaran — Nepal's Digital Marketplace"/>
+<meta name="twitter:description" content="Nepal's trusted digital products marketplace. Instant delivery via WhatsApp. Based in Kathmandu."/>
+<title>About Us — SoftUpakaran</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg"/>
+<link rel="manifest" href="/manifest.json"/>
+<link href="styles.css" rel="stylesheet"/>
+<style>
+  /* About page styles */
+  .about-hero{padding:60px 0 48px;text-align:center;background:radial-gradient(ellipse at 30% 0,rgba(124,58,237,.35),transparent 55%),radial-gradient(ellipse at 80% 80%,rgba(6,182,212,.25),transparent 55%),var(--bg);border-bottom:1px solid var(--line)}
+  .about-hero__kicker{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(167,139,250,.85);display:inline-block;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.35);padding:4px 14px;border-radius:999px;margin-bottom:14px}
+  .about-hero__title{font-size:clamp(32px,5vw,56px);font-weight:900;margin:0 0 14px;line-height:1.06}
+  .about-hero__title em{font-style:normal;background:linear-gradient(90deg,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .about-hero__sub{font-size:16px;color:rgba(255,255,255,.7);max-width:54ch;margin:0 auto 28px;line-height:1.6}
+  .about-hero__actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+
+  /* Stats bar */
+  .about-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0;border:1px solid var(--line);border-radius:20px;overflow:hidden;margin:32px 0}
+  .about-stat{padding:24px 20px;text-align:center;border-right:1px solid var(--line);background:rgba(255,255,255,.02)}
+  .about-stat:last-child{border-right:none}
+  .about-stat__num{font-size:32px;font-weight:900;background:linear-gradient(135deg,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
+  .about-stat__label{font-size:12px;color:rgba(255,255,255,.55);margin-top:6px;letter-spacing:.04em}
+
+  /* Section styles */
+  .about-section{padding:48px 0}
+  .about-section__label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(167,139,250,.8);margin-bottom:10px;font-weight:700}
+  .about-section__title{font-size:clamp(22px,3vw,32px);font-weight:800;margin:0 0 14px;line-height:1.15}
+  .about-section__body{color:rgba(255,255,255,.72);line-height:1.75;font-size:15px;max-width:64ch}
+  .about-split{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+  .about-split--rev{direction:rtl}
+  .about-split--rev>*{direction:ltr}
+
+  /* Values grid */
+  .about-values{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:24px}
+  .about-value{padding:22px 20px;border-radius:18px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);transition:border-color .2s,transform .2s}
+  .about-value:hover{border-color:rgba(124,58,237,.45);transform:translateY(-4px)}
+  .about-value__icon{font-size:28px;margin-bottom:12px}
+  .about-value__title{font-size:15px;font-weight:700;margin:0 0 6px}
+  .about-value__desc{font-size:13px;color:rgba(255,255,255,.6);line-height:1.6;margin:0}
+
+  /* Products grid */
+  .about-products{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-top:24px}
+  .about-product{padding:18px 16px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);text-align:center;transition:border-color .2s,transform .2s}
+  .about-product:hover{border-color:rgba(6,182,212,.4);transform:translateY(-3px)}
+  .about-product__icon{font-size:30px;margin-bottom:8px}
+  .about-product__name{font-size:14px;font-weight:700;margin:0 0 4px}
+  .about-product__desc{font-size:12px;color:rgba(255,255,255,.55);margin:0}
+
+  /* Timeline */
+  .about-timeline{margin-top:28px;position:relative;padding-left:28px}
+  .about-timeline::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,rgba(124,58,237,.8),rgba(6,182,212,.5),rgba(124,58,237,.2))}
+  .about-tl-item{position:relative;padding:0 0 28px 24px}
+  .about-tl-item:last-child{padding-bottom:0}
+  .about-tl-item::before{content:'';position:absolute;left:-20px;top:5px;width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#06b6d4);box-shadow:0 0 0 3px rgba(124,58,237,.25)}
+  .about-tl-year{font-size:11px;font-weight:800;letter-spacing:.1em;color:rgba(167,139,250,.8);margin-bottom:4px}
+  .about-tl-title{font-size:15px;font-weight:700;margin:0 0 4px}
+  .about-tl-desc{font-size:13px;color:rgba(255,255,255,.6);margin:0;line-height:1.55}
+
+  /* Contact card */
+  .about-contact{border-radius:24px;background:linear-gradient(135deg,rgba(124,58,237,.18),rgba(6,182,212,.12));border:1px solid rgba(124,58,237,.3);padding:36px;margin-top:8px;display:flex;gap:32px;align-items:center;flex-wrap:wrap}
+  .about-contact__text h2{font-size:22px;font-weight:800;margin:0 0 8px}
+  .about-contact__text p{margin:0;color:rgba(255,255,255,.7);font-size:14px;line-height:1.6;max-width:44ch}
+  .about-contact__actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px}
+  .about-contact__detail{display:flex;flex-direction:column;gap:8px;min-width:200px}
+  .about-contact__row{display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(255,255,255,.7)}
+
+  @media(max-width:760px){
+    .about-split{grid-template-columns:1fr}
+    .about-split--rev{direction:ltr}
+    .about-hero{padding:40px 0 32px}
+    .about-stat{padding:18px 12px}
+    .about-contact{flex-direction:column;padding:24px}
+  }
+  @media(max-width:520px){
+    .about-stats{grid-template-columns:repeat(2,1fr)}
+    .about-stat{border-bottom:1px solid var(--line)}
+  }
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to content</a>
+
+<header class="topbar">
+<div class="container">
+<div class="nav">
+  <a class="brand" href="/">
+    <img alt="SoftUpakaran" src="assets/logo.svg" loading="lazy"/>
+    <span class="badge delivery-badge brand-badge">Instant Delivery</span>
+  </a>
+  <div class="navlinks">
+    <a class="btn" href="/">Home</a>
+    <a class="btn" href="live-events.html">🎸 Live Events</a>
+    <a class="btn" href="product.html#wishlist">♡ Wishlist</a>
+    <a class="btn" data-open-cart="" href="#">Cart <span class="badge" data-cart-count="">0</span></a>
+    <div id="googleNavBtn" class="google-nav-btn" aria-label="Google sign in"></div>
+    <a class="whatsapp-nav-btn" href="https://wa.me/97721121212121" aria-label="WhatsApp"><svg viewBox="0 0 32 32" width="18" height="18"><path fill="currentColor" d="M16 3C9.4 3 4 8.4 4 15c0 2.3.6 4.4 1.8 6.2L4 29l8-1.6c1.2.5 2.6.7 4 .7 6.6 0 12-5.4 12-12S22.6 3 16 3zm0 21.8c-1.2 0-2.4-.3-3.4-.8l-.5-.2-4.7.9.9-4.5-.3-.6c-.7-1.1-1-2.4-1-3.7 0-4.2 3.4-7.6 7.6-7.6s7.6 3.4 7.6 7.6-3.4 7.6-7.6 7.6zm4.2-5.7c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.6.1-.2.2-.7.8-.9 1-.1.2-.3.2-.5.1-1.8-.9-3-2.2-3.6-3.4-.2-.3 0-.5.1-.6.1-.1.2-.3.3-.4.1-.1.1-.2.2-.4.1-.1 0-.3 0-.4 0-.1-.6-1.5-.8-2-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.6.3-.2.2-.8.8-.8 2s.8 2.3.9 2.5c.1.2 1.6 2.6 4 3.6 2.3 1 2.3.7 2.7.6.4-.1 1.4-.6 1.6-1.1.2-.5.2-.9.1-1z"/></svg></a>
+  </div>
+  <div class="mobileNav">
+    <a class="mobileNavBtn" href="/" aria-label="Home"><span>Home</span></a>
+    <button class="mobileNavBtn" type="button" data-open-cart="" aria-label="Cart">
+      <span>Cart</span><span class="badge" data-cart-count="">0</span>
+    </button>
+  </div>
+</div>
+<nav class="pillnav" aria-label="Site sections">
+  <div class="pills" data-pills="">
+    <a class="pill" href="live-events.html">🎸 Live Events</a>
+    <a class="pill" href="category#subscriptions">Subscriptions</a>
+    <a class="pill" href="category#wp-plugins">WP Plugins</a>
+    <a class="pill" href="category#judas-priest">🤘 Judas Priest</a>
+  </div>
+</nav>
+</div>
+</header>
+
+<main id="main-content">
+
+  <!-- Hero -->
+  <div class="about-hero">
+    <div class="container">
+      <span class="about-hero__kicker">🇳🇵 Proudly Nepali</span>
+      <h1 class="about-hero__title">We make digital products<br><em>accessible to Nepal</em></h1>
+      <p class="about-hero__sub">SoftUpakaran is Kathmandu's go-to marketplace for subscriptions, gaming top-ups, WordPress tools, VPN, and now — live concert tickets. Instant delivery. Local payments. Real support.</p>
+      <div class="about-hero__actions">
+        <a class="btn primary" href="/" style="padding:10px 22px">🛒 Start Shopping</a>
+        <a class="btn" href="https://wa.me/97721121212121" target="_blank" rel="noreferrer" style="padding:10px 22px">💬 WhatsApp Us</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- Stats -->
+    <div class="about-stats">
+      <div class="about-stat"><div class="about-stat__num">1,200+</div><div class="about-stat__label">Happy Customers</div></div>
+      <div class="about-stat"><div class="about-stat__num">500+</div><div class="about-stat__label">Products Available</div></div>
+      <div class="about-stat"><div class="about-stat__num">15 min</div><div class="about-stat__label">Avg Delivery Time</div></div>
+      <div class="about-stat"><div class="about-stat__num">99%</div><div class="about-stat__label">Satisfaction Rate</div></div>
+      <div class="about-stat"><div class="about-stat__num">24 / 7</div><div class="about-stat__label">WhatsApp Support</div></div>
+    </div>
+
+    <!-- Story -->
+    <div class="about-section about-split">
+      <div>
+        <p class="about-section__label">Our Story</p>
+        <h2 class="about-section__title">Built because buying digital products in Nepal was broken</h2>
+        <p class="about-section__body">Grey-market sellers. Unreliable delivery. No local payment support. That was the reality for anyone trying to buy a Netflix subscription or a WordPress plugin in Nepal. We started SoftUpakaran to fix that — a single, trusted place where Nepali customers get exactly what they pay for, instantly, at fair prices.</p>
+        <p class="about-section__body" style="margin-top:14px">Every order is confirmed within minutes via WhatsApp. Every payment goes through eSewa, Khalti, IME Pay or bank transfer. No grey market, no waiting days for a reply.</p>
+      </div>
+      <div style="background:radial-gradient(ellipse at 30% 40%,rgba(124,58,237,.35),transparent 60%),linear-gradient(135deg,rgba(10,14,28,.9),rgba(14,20,40,.9));border-radius:24px;border:1px solid rgba(255,255,255,.08);padding:32px;display:flex;flex-direction:column;gap:16px">
+        <div style="font-size:36px">🏔️</div>
+        <h3 style="margin:0;font-size:18px">Based in Kathmandu</h3>
+        <p style="margin:0;color:rgba(255,255,255,.65);font-size:14px;line-height:1.6">We understand the Nepali market — local payment preferences, WhatsApp-first communication, and the need for fast, trustworthy delivery.</p>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(255,255,255,.7)"><span style="color:#10b981">✓</span> New Baneshwor, Kathmandu</div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(255,255,255,.7)"><span style="color:#10b981">✓</span> Operating since 2023</div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(255,255,255,.7)"><span style="color:#10b981">✓</span> Serving all 77 districts of Nepal</div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(255,255,255,.7)"><span style="color:#10b981">✓</span> 5 payment methods accepted</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- What we sell -->
+    <div class="about-section">
+      <p class="about-section__label">What We Sell</p>
+      <h2 class="about-section__title">Everything digital, delivered instantly</h2>
+      <div class="about-products">
+        <div class="about-product"><div class="about-product__icon">🎬</div><div class="about-product__name">Streaming</div><p class="about-product__desc">Netflix, Spotify, Disney+, YouTube Premium</p></div>
+        <div class="about-product"><div class="about-product__icon">🎮</div><div class="about-product__name">Gaming</div><p class="about-product__desc">Free Fire diamonds, PUBG UC, Gift Cards</p></div>
+        <div class="about-product"><div class="about-product__icon">⚙️</div><div class="about-product__name">WordPress</div><p class="about-product__desc">Premium plugins, themes, eCommerce packs</p></div>
+        <div class="about-product"><div class="about-product__icon">🔒</div><div class="about-product__name">VPN & Security</div><p class="about-product__desc">NordVPN, ExpressVPN, and more</p></div>
+        <div class="about-product"><div class="about-product__icon">🎸</div><div class="about-product__name">Live Events</div><p class="about-product__desc">Concert tickets for top Nepali bands</p></div>
+        <div class="about-product"><div class="about-product__icon">🛒</div><div class="about-product__name">eCommerce</div><p class="about-product__desc">WooCommerce, Shopify tools & extensions</p></div>
+      </div>
+    </div>
+
+    <!-- Values -->
+    <div class="about-section">
+      <p class="about-section__label">Our Values</p>
+      <h2 class="about-section__title">Why customers trust us</h2>
+      <div class="about-values">
+        <div class="about-value"><div class="about-value__icon">⚡</div><h3 class="about-value__title">Instant Delivery</h3><p class="about-value__desc">Most orders fulfilled within 5–30 minutes via WhatsApp. No waiting days for a response.</p></div>
+        <div class="about-value"><div class="about-value__icon">🔐</div><h3 class="about-value__title">Verified & Legitimate</h3><p class="about-value__desc">We are not a grey-market reseller. Every product we sell is sourced legitimately.</p></div>
+        <div class="about-value"><div class="about-value__icon">💳</div><h3 class="about-value__title">Local Payments</h3><p class="about-value__desc">eSewa, Khalti, IME Pay, ConnectIPS, and bank transfer. No international card needed.</p></div>
+        <div class="about-value"><div class="about-value__icon">🤝</div><h3 class="about-value__title">Real Support</h3><p class="about-value__desc">24/7 WhatsApp support from a real person — not a bot. We fix problems, not pass them on.</p></div>
+        <div class="about-value"><div class="about-value__icon">💰</div><h3 class="about-value__title">Fair Pricing</h3><p class="about-value__desc">Competitive, transparent prices. No hidden fees. What you see is what you pay.</p></div>
+        <div class="about-value"><div class="about-value__icon">🔄</div><h3 class="about-value__title">Refund Policy</h3><p class="about-value__desc">No-questions-asked refund for delivery failures. Your money is safe with us.</p></div>
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="about-section about-split--rev about-split">
+      <div>
+        <p class="about-section__label">Our Journey</p>
+        <h2 class="about-section__title">Growing one customer at a time</h2>
+        <div class="about-timeline">
+          <div class="about-tl-item">
+            <div class="about-tl-year">2023</div>
+            <h4 class="about-tl-title">Founded in Kathmandu</h4>
+            <p class="about-tl-desc">Started with just Netflix and Spotify subscriptions delivered via WhatsApp. First 50 customers in month one.</p>
+          </div>
+          <div class="about-tl-item">
+            <div class="about-tl-year">2024</div>
+            <h4 class="about-tl-title">Expanded to Gaming & WordPress</h4>
+            <p class="about-tl-desc">Added Free Fire, PUBG UC, WordPress plugins and themes. Crossed 500 happy customers. Launched the website.</p>
+          </div>
+          <div class="about-tl-item">
+            <div class="about-tl-year">Early 2025</div>
+            <h4 class="about-tl-title">1,000+ Customers</h4>
+            <p class="about-tl-desc">Reached 1,000 customers. Added VPN, eCommerce tools, and the Judas Priest merch collection.</p>
+          </div>
+          <div class="about-tl-item">
+            <div class="about-tl-year">2026</div>
+            <h4 class="about-tl-title">Live Events Launched 🎸</h4>
+            <p class="about-tl-desc">Added concert ticket booking for Nepal's biggest bands — 1974 AD, Nepathya, Cobweb, Albatross, Kutumba, The Uglyz.</p>
+          </div>
+          <div class="about-tl-item">
+            <div class="about-tl-year">Coming Soon</div>
+            <h4 class="about-tl-title">Domain Launch & Full Platform</h4>
+            <p class="about-tl-desc">Launching softupakaran.com with real payment gateway, automated delivery, and user accounts.</p>
+          </div>
+        </div>
+      </div>
+      <div style="background:radial-gradient(ellipse at 70% 30%,rgba(6,182,212,.3),transparent 55%),linear-gradient(180deg,rgba(10,14,28,.9),rgba(14,20,40,.9));border-radius:24px;border:1px solid rgba(255,255,255,.08);padding:32px;display:flex;flex-direction:column;gap:20px">
+        <h3 style="margin:0;font-size:16px;color:rgba(255,255,255,.6);font-weight:600;letter-spacing:.08em;text-transform:uppercase">Accepted Payments</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:10px">
+          <span class="payBadge payBadge--esewa">eSewa</span>
+          <span class="payBadge payBadge--khalti">Khalti</span>
+          <span class="payBadge payBadge--ime">IME Pay</span>
+          <span class="payBadge payBadge--connectips">ConnectIPS</span>
+          <span class="payBadge payBadge--bank">🏦 Bank Transfer</span>
+        </div>
+        <div style="height:1px;background:var(--line)"></div>
+        <h3 style="margin:0;font-size:16px;color:rgba(255,255,255,.6);font-weight:600;letter-spacing:.08em;text-transform:uppercase">As Seen In</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+          <span style="font-size:12px;color:rgba(255,255,255,.5);padding:6px 12px;border:1px solid var(--line);border-radius:8px">Online Khabar</span>
+          <span style="font-size:12px;color:rgba(255,255,255,.5);padding:6px 12px;border:1px solid var(--line);border-radius:8px">Tech Story Nepal</span>
+          <span style="font-size:12px;color:rgba(255,255,255,.5);padding:6px 12px;border:1px solid var(--line);border-radius:8px">Setopati</span>
+          <span style="font-size:12px;color:rgba(255,255,255,.5);padding:6px 12px;border:1px solid var(--line);border-radius:8px">Nepal Times</span>
+        </div>
+        <div style="height:1px;background:var(--line)"></div>
+        <h3 style="margin:0;font-size:16px;color:rgba(255,255,255,.6);font-weight:600;letter-spacing:.08em;text-transform:uppercase">Delivery Method</h3>
+        <p style="margin:0;font-size:13px;color:rgba(255,255,255,.65);line-height:1.6">All digital products are delivered via <strong style="color:#fff">WhatsApp</strong> and <strong style="color:#fff">Email</strong> within minutes of payment confirmation. Concert tickets are sent as a digital e-ticket PDF.</p>
+      </div>
+    </div>
+
+    <!-- Contact -->
+    <div class="about-section" style="padding-bottom:60px">
+      <div class="about-contact">
+        <div class="about-contact__text" style="flex:1">
+          <h2>Get in touch</h2>
+          <p>For orders, questions, refunds, or just to say hi — we're always on WhatsApp. Most messages are answered within 15 minutes.</p>
+          <div class="about-contact__actions">
+            <a class="btn primary" href="https://wa.me/97721121212121" target="_blank" rel="noreferrer" style="padding:11px 22px">💬 WhatsApp Us</a>
+            <a class="btn" href="mailto:contact@softupakaran.com" style="padding:11px 22px">✉️ Email</a>
+            <a class="btn" href="live-events.html" style="padding:11px 22px">🎸 Book Tickets</a>
+          </div>
+        </div>
+        <div class="about-contact__detail">
+          <div class="about-contact__row">📍 New Baneshwor, Kathmandu, Nepal</div>
+          <div class="about-contact__row">📞 +977-01-XXXXXXX</div>
+          <div class="about-contact__row">✉️ contact@softupakaran.com</div>
+          <div class="about-contact__row">🕐 Support: 24/7 via WhatsApp</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+</main>
+
+<footer class="footer">
+<div class="container">
+<div class="footerGrid">
+<div>
+  <img alt="SoftUpakaran" src="assets/logo.svg" style="height:32px" loading="lazy"/>
+  <p class="cardMeta" style="margin-top:10px;max-width:44ch">Nepal's trusted digital marketplace — subscriptions, gaming, WordPress tools, and live event tickets.</p>
+  <p class="copy">New Baneshwor, Kathmandu &nbsp;·&nbsp; contact@softupakaran.com</p>
+</div>
+<div>
+  <h4>Collections</h4>
+  <a href="category#subscriptions">Subscriptions</a>
+  <a href="category#gaming">Gaming</a>
+  <a href="category#wp-plugins">WP Plugins</a>
+  <a href="category#judas-priest">🤘 Judas Priest</a>
+</div>
+<div>
+  <h4>Company</h4>
+  <a href="about.html">About Us</a>
+  <a href="live-events.html">🎸 Live Events</a>
+  <a href="terms.html">Terms &amp; Conditions</a>
+  <a href="privacy.html">Privacy Policy</a>
+</div>
+<div>
+  <h4>Payments</h4>
+  <div class="payBadges" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">
+    <span class="payBadge payBadge--esewa">eSewa</span>
+    <span class="payBadge payBadge--khalti">Khalti</span>
+    <span class="payBadge payBadge--ime">IME Pay</span>
+    <span class="payBadge payBadge--connectips">ConnectIPS</span>
+    <span class="payBadge payBadge--bank">🏦 Bank</span>
+  </div>
+</div>
+</div>
+<div class="copy" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--line)">© 2026 SoftUpakaran. All rights reserved. &nbsp;·&nbsp; Kathmandu, Nepal</div>
+</div>
+</footer>
+
+<!-- Cart Modal -->
+<div aria-hidden="true" class="modalBackdrop" data-cart-modal="">
+  <div aria-label="Cart" class="modal" role="dialog">
+    <div class="modalHeader">
+      <h3>Your Cart</h3>
+      <button aria-label="Close" class="btn icon" data-cart-close="">✕</button>
+    </div>
+    <div class="modalBody" data-cart-body=""></div>
+    <div class="cartFooter" data-cart-footer=""></div>
+  </div>
+</div>
+<div aria-hidden="true" class="modalBackdrop" data-pay-modal="">
+  <div aria-label="Payment options" class="modal" role="dialog">
+    <div class="modalHeader">
+      <h3>Checkout</h3>
+      <button aria-label="Close" class="btn icon" data-pay-close="">✕</button>
+    </div>
+    <div class="modalBody" data-pay-body=""></div>
+    <div class="cartFooter" data-pay-footer=""></div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/auto-init.js"></script>
+</body>
+</html>

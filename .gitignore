@@ -58,3 +58,9 @@ tmp_*.py
 wsl_proxy_files_*.txt
 testgithub*
 rn*
+
+# Debug/test screenshots (not part of the site)
+services/frontend/mobile-check*.png
+services/frontend/mobile-v*.png
+services/frontend/mobile-final.png
+services/frontend/tablet-check.png
