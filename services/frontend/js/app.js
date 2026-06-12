@@ -2551,7 +2551,6 @@ function wireSearch(){
 
     const updateResults = () => {
       const q = input.value.trim().toLowerCase();
-      if(!root) return;
       const allProds = [...products, ...DEFAULT_PRODUCTS.filter(p => !products.find(x => x.id === p.id))];
       const filtered = q ? allProds.filter(p =>
         p.name.toLowerCase().includes(q) ||
@@ -2559,13 +2558,15 @@ function wireSearch(){
         (p.note || "").toLowerCase().includes(q)
       ) : [];
       const gridItems = filtered.slice(0, 8);
-      root.innerHTML = gridItems.length ? gridItems.map(productCard).join("") : q ? `
-        <div class="card" style="grid-column:1/-1"><div class="pad">
-          <p class="cardTitle">No matches for "${escapeHtml(q)}"</p>
-          <p class="cardMeta">Try a different keyword.</p>
-        </div></div>
-      ` : "";
-      if (gridItems.length) { wireAddButtons(root); ensureVisible(root); }
+      if (root) {
+        root.innerHTML = gridItems.length ? gridItems.map(productCard).join("") : q ? `
+          <div class="card" style="grid-column:1/-1"><div class="pad">
+            <p class="cardTitle">No matches for "${escapeHtml(q)}"</p>
+            <p class="cardMeta">Try a different keyword.</p>
+          </div></div>
+        ` : "";
+        if (gridItems.length) { wireAddButtons(root); ensureVisible(root); }
+      }
       renderDropdown(filtered.slice(0, 7), q);
     };
 
