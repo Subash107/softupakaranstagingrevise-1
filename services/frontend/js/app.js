@@ -1501,7 +1501,7 @@ function initMobileBottomNav() {
       <span class="mobileBottomNav__badge badge" data-cart-count="">0</span>
       <span>Cart</span>
     </button>
-    <a class="mobileBottomNav__item" href="/profile" aria-label="Profile">
+    <a class="mobileBottomNav__item" href="profile.html" aria-label="Profile">
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       <span>Account</span>
     </a>`;
@@ -3121,7 +3121,7 @@ document.addEventListener("DOMContentLoaded", init);
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
+    navigator.serviceWorker.register("sw.js").catch(() => {});
   });
 }
 
@@ -5014,7 +5014,7 @@ function initBreadcrumb() {
   if (isCategory) {
     crumbs.push({ label: hash ? hash.replace(/-/g, " ").replace(/\b\w/g, function(c) { return c.toUpperCase(); }) : "All Categories", href: null });
   } else if (isProduct) {
-    crumbs.push({ label: "Products", href: "/category" });
+    crumbs.push({ label: "Products", href: "category.html" });
     if (hash) crumbs.push({ label: hash.replace(/-/g, " ").replace(/\b\w/g, function(c) { return c.toUpperCase(); }), href: null });
   } else if (isProfile) {
     crumbs.push({ label: "My Profile", href: null });
