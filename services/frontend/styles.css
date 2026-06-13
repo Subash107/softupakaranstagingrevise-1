@@ -438,3 +438,7 @@ header.topbar .nav{overflow:visible}
 @media(max-width:520px){
   .search{display:none!important}
 }
+
+/* ── Search dropdown z-index: pill nav was painting over it ── */
+.topbar .nav{position:relative;z-index:10}
+.search-dropdown{z-index:9999!important}
