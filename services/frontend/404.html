@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Page Not Found — SoftUpakaran</title>
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml"/>
+<link rel="stylesheet" href="styles.css"/>
+<style>
+  .err-wrap{min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px}
+  .err-code{font-size:clamp(80px,18vw,140px);font-weight:900;line-height:1;background:linear-gradient(135deg,#7c3aed,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:0}
+  .err-title{font-size:clamp(20px,4vw,28px);font-weight:800;margin:12px 0 8px}
+  .err-sub{color:rgba(255,255,255,.6);font-size:15px;max-width:40ch;margin:0 auto 28px;line-height:1.6}
+  .err-search{display:flex;gap:0;max-width:400px;width:100%;margin:0 auto 24px;border:1px solid rgba(255,255,255,.15);border-radius:14px;overflow:hidden;background:rgba(255,255,255,.05)}
+  .err-search input{flex:1;background:none;border:none;padding:12px 16px;color:#fff;font-size:14px;outline:none}
+  .err-search input::placeholder{color:rgba(255,255,255,.4)}
+  .err-search button{padding:12px 18px;background:linear-gradient(135deg,#7c3aed,#06b6d4);border:none;color:#fff;font-weight:700;font-size:14px;cursor:pointer}
+  .err-links{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="container">
+    <div class="nav">
+      <a class="brand" href="index.html">
+        <img alt="SoftUpakaran" src="assets/logo.svg"/>
+        <span class="brand-name">SoftUpakaran</span>
+      </a>
+      <div class="navlinks">
+        <a class="btn" href="index.html"><span>Home</span></a>
+        <a class="btn" href="category"><span>Shop</span></a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <div class="err-wrap">
+    <p class="err-code">404</p>
+    <h1 class="err-title">Page not found</h1>
+    <p class="err-sub">This page doesn't exist or may have moved. Try searching for what you need.</p>
+
+    <div class="err-search">
+      <input id="errSearchInput" type="search" placeholder="Search products..." autocomplete="off"/>
+      <button id="errSearchBtn" type="button">Search</button>
+    </div>
+
+    <div class="err-links">
+      <a class="btn primary" href="index.html">🏠 Go Home</a>
+      <a class="btn" href="category">🛒 All Products</a>
+      <a class="btn" href="live-events.html">🎸 Live Events</a>
+      <a class="btn" href="https://wa.me/9779800000000" target="_blank" rel="noreferrer">💬 WhatsApp Support</a>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="copy">© 2026 SoftUpakaran. All rights reserved.</div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('errSearchBtn').addEventListener('click', function(){
+    var q = document.getElementById('errSearchInput').value.trim();
+    if(q) window.location.href = 'index.html#search=' + encodeURIComponent(q);
+  });
+  document.getElementById('errSearchInput').addEventListener('keydown', function(e){
+    if(e.key==='Enter'){
+      var q = this.value.trim();
+      if(q) window.location.href = 'index.html#search=' + encodeURIComponent(q);
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /secret-admin-panel.html
+Disallow: /profile.html
+Disallow: /js/
+Disallow: /admin
+
+Sitemap: https://softupakaran.com/sitemap.xml
