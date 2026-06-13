@@ -1488,7 +1488,7 @@ function initMobileBottomNav() {
   nav.className = "mobileBottomNav";
   nav.setAttribute("aria-label", "Bottom navigation");
   nav.innerHTML = `
-    <a class="mobileBottomNav__item" href="/" aria-label="Home">
+    <a class="mobileBottomNav__item" href="index.html" aria-label="Home">
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       <span>Home</span>
     </a>
@@ -2022,7 +2022,7 @@ function renderCategoryPage(){
         <p style="font-size:2rem;margin-bottom:12px">🛍️</p>
         <p class="cardTitle">${cat ? cat.name : "Category"} — Coming Soon</p>
         <p class="cardMeta" style="margin-top:6px">Products for this category are being added. Check back soon!</p>
-        <a class="btn primary" href="/" style="margin-top:18px;display:inline-block">Browse All Products</a>
+        <a class="btn primary" href="index.html" style="margin-top:18px;display:inline-block">Browse All Products</a>
       </div></div>`;
   wireAddButtons(root);
   ensureVisible(root);
@@ -2037,7 +2037,7 @@ function renderProductPage(){
       <div class="card"><div class="pad">
         <p class="cardTitle">No product selected</p>
         <p class="cardMeta">Please browse the store and select a product.</p>
-        <a class="btn primary" href="/" style="margin-top:14px;display:inline-block">Browse Store</a>
+        <a class="btn primary" href="index.html" style="margin-top:14px;display:inline-block">Browse Store</a>
       </div></div>`;
     return;
   }
@@ -2062,7 +2062,7 @@ function renderProductPage(){
             <p class="cardTitle">Product not found</p>
             <p class="cardMeta">This product could not be loaded. It may have been removed or is temporarily unavailable.</p>
             <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
-              <a class="btn primary" href="/">Back to Store</a>
+              <a class="btn primary" href="index.html">Back to Store</a>
               <button class="btn" onclick="history.back()">Go Back</button>
             </div>
           </div></div>`;
@@ -3396,7 +3396,7 @@ function renderWishlistPage() {
   const wl = getWishlist();
   const allP = [...(window.__products||[]), ...DEFAULT_PRODUCTS, ...SAMPLE_SUBSCRIPTIONS, ...SAMPLE_TOOLS];
   const seen = new Set(); const items = wl.map(id => allP.find(p => p.id === id)).filter(p => { if(!p||seen.has(p.id)) return false; seen.add(p.id); return true; });
-  main.innerHTML = `<section class="section"><div class="sectionHeader"><div><h2>My Wishlist</h2><p>${items.length} saved item${items.length!==1?"s":""}</p></div><a class="btn" href="/">← Back to Shop</a></div>${items.length?`<div class="grid">${items.map(p=>productCard(p)).join("")}</div>`:`<div style="padding:40px;text-align:center;opacity:.55"><div style="font-size:3rem">🤍</div><p>Your wishlist is empty.<br>Heart any product to save it here.</p></div>`}</section>`;
+  main.innerHTML = `<section class="section"><div class="sectionHeader"><div><h2>My Wishlist</h2><p>${items.length} saved item${items.length!==1?"s":""}</p></div><a class="btn" href="index.html">← Back to Shop</a></div>${items.length?`<div class="grid">${items.map(p=>productCard(p)).join("")}</div>`:`<div style="padding:40px;text-align:center;opacity:.55"><div style="font-size:3rem">🤍</div><p>Your wishlist is empty.<br>Heart any product to save it here.</p></div>`}</section>`;
   wireAddButtons(main); wirePreviewCards();
 }
 
@@ -4335,7 +4335,7 @@ function renderOrderHistory() {
   const main = document.querySelector("main.container") || document.querySelector("main");
   if (!main) return;
   const orders = getOrderHistory();
-  main.innerHTML = `<section class="section"><div class="sectionHeader"><div><h2>Order History</h2><p>${orders.length} order${orders.length !== 1 ? "s" : ""}</p></div><a class="btn" href="/">← Back to Shop</a></div>${orders.length ? orders.map(o => `<div class="orderHistCard"><div class="orderHistHead"><span class="orderHistId">${escapeHtml(o.id)}</span><span class="orderHistDate">${new Date(o.date).toLocaleDateString("en-NP",{day:"numeric",month:"short",year:"numeric"})}</span><span class="orderHistTotal">${formatNPR(o.total||0)}</span></div><div class="orderHistItems">${(o.items||[]).map(i=>`<span class="orderHistItem">${escapeHtml(i.name||i.id)} \xd7${i.qty||1}</span>`).join("")}</div></div>`).join("") : `<div style="padding:48px;text-align:center;opacity:.55"><div style="font-size:3rem">📦</div><p>No orders yet. <a href="/" style="color:#a78bfa">Shop now!</a></p></div>`}</section>`;
+  main.innerHTML = `<section class="section"><div class="sectionHeader"><div><h2>Order History</h2><p>${orders.length} order${orders.length !== 1 ? "s" : ""}</p></div><a class="btn" href="index.html">← Back to Shop</a></div>${orders.length ? orders.map(o => `<div class="orderHistCard"><div class="orderHistHead"><span class="orderHistId">${escapeHtml(o.id)}</span><span class="orderHistDate">${new Date(o.date).toLocaleDateString("en-NP",{day:"numeric",month:"short",year:"numeric"})}</span><span class="orderHistTotal">${formatNPR(o.total||0)}</span></div><div class="orderHistItems">${(o.items||[]).map(i=>`<span class="orderHistItem">${escapeHtml(i.name||i.id)} \xd7${i.qty||1}</span>`).join("")}</div></div>`).join("") : `<div style="padding:48px;text-align:center;opacity:.55"><div style="font-size:3rem">📦</div><p>No orders yet. <a href="index.html" style="color:#a78bfa">Shop now!</a></p></div>`}</section>`;
 }
 
 /* 4. Loyalty Points */
